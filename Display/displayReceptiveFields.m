@@ -735,11 +735,11 @@ for i=1:numDays
     end
 
     
-%     rfValuesLFP = load(fullfile(folderSourceString,'data',subjectName,gridType,expDates{i},protocolNames{i},'RFMeasures','LFP',['rfValues' fileTag filterStr '.mat']));
-%     rfParamsLFP = load(fullfile(folderSourceString,'data',subjectName,gridType,expDates{i},protocolNames{i},'RFMeasures','LFP',['rfParams' num2str(poolingOption) fileTag filterStr '.mat']));
+    rfValuesLFP = load(fullfile(folderSourceString,'data',subjectName,gridType,expDates{i},protocolNames{i},'RFMeasures','LFP',['rfValues' fileTag filterStr '.mat']));
+    rfParamsLFP = load(fullfile(folderSourceString,'data',subjectName,gridType,expDates{i},protocolNames{i},'RFMeasures','LFP',['rfParams' num2str(poolingOption) fileTag filterStr '.mat']));
     
-    rfValuesLFP = load(fullfile(folderSourceString,'data',subjectName,gridType,expDates{i},protocolNames{i},'RFMeasures','Spikes',['rfValues' fileTag filterStr '.mat']));
-    rfParamsLFP = load(fullfile(folderSourceString,'data',subjectName,gridType,expDates{i},protocolNames{i},'RFMeasures','Spikes',['rfParams' num2str(poolingOption) fileTag filterStr '.mat']));
+%     rfValuesLFP = load(fullfile(folderSourceString,'data',subjectName,gridType,expDates{i},protocolNames{i},'RFMeasures','Spikes',['rfValues' fileTag filterStr '.mat']));
+%     rfParamsLFP = load(fullfile(folderSourceString,'data',subjectName,gridType,expDates{i},protocolNames{i},'RFMeasures','Spikes',['rfParams' num2str(poolingOption) fileTag filterStr '.mat']));
     
     if strcmp(rfMeasureForLFP,'RMS')
        rfVals(i,:,:,:,:) = rfValuesLFP.rfValsRMS; %#ok<*AGROW>
@@ -747,11 +747,15 @@ for i=1:numDays
     elseif strcmp(rfMeasureForLFP,'Min')
        rfVals(i,:,:,:,:) = rfValuesLFP.rfValsMin; %#ok<*AGROW>
        params = rfParamsLFP.paramsMinScaled;
+    elseif strcmp(rfMeasureForLFP,'Spikes')
+       load(fullfile(folderSourceString,'data',subjectName,gridType,expDates{i},protocolNames{i},'RFMeasures', rfMeasureForLFP,['rfParams' num2str(poolingOption) fileTag '.mat'])); % poolingOption
+       params = paramsRMSScaled;
+       rfVals(i,:,:,:,:) = rfValuesLFP.rfValsMin;
     end
 
     for jj=1:numElectrodesLFP
         j=electrodeListLFP(jj);
-        
+        disp([num2str(jj) ':' num2str(j)]);
         azi(i,j) = params{j,timePeriodPos}(1);
         ele(i,j) = params{j,timePeriodPos}(2);
 %         rfSizeAzi(i,j) = params{j,timePeriodPos}(3);

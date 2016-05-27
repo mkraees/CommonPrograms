@@ -109,7 +109,7 @@ stimResults.protocolNumber = convertUnits([digitalCodeInfo(find(convertStrCodeTo
 % particular parameter are sent. For eg. if the values are sent for all
 % three gabors they will be ordered as - [g0 g1 g2 g0 g1 g2 ...], if only
 % the ring (g1) and centre (g2) values are sent then they would be - [g1 g2
-% g1 g2 ...], if only surround values are sent it would be - [g1 g1 g1 ...]
+% g1 g2 ...], if only surround values are sent it would be - [g0 g0 g0 ...]
 % and so on. We take the values that are sent and repeat/arrange them
 % so as to fill the values for all gabors before storing them.
 % For eg. in Ring protocol all values for S (gabor0) are sent and only the

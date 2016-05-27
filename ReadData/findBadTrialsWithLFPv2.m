@@ -87,7 +87,7 @@ load(fullfile(folderSegment,'LFP','lfpInfo.mat'));
 lengthShowElectrodes = length(showElectrodes);
 if ~isempty(showElectrodes)
     for i=1:lengthShowElectrodes
-        
+        figure;
         if lengthShowElectrodes>1
             subplot(lengthShowElectrodes,1,i);
         else

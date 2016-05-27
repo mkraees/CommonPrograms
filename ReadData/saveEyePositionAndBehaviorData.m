@@ -290,6 +290,14 @@ if ~exist('Fs','var');                  Fs = 200;                       end    %
 
 datFileName = fullfile(folderSourceString,'data','rawData',[subjectName expDate],[subjectName expDate protocolName '.dat']);
 
+datFileInfoName = fullfile(folderSourceString,'data','rawData',[subjectName expDate],[subjectName expDate protocolName '_fileInfo.mat']);
+removeFile=0; % [Vinay] - added this loop to delete the already generated files (due to which MATLAB keeps throwing an error)
+if removeFile
+    if exist(datFileInfoName,'file')
+        delete(datFileInfoName);
+    end
+end
+
 % Get Lablib data
 header = readLLFile('i',datFileName);
 
@@ -354,7 +362,7 @@ for i=1:numTrials
             % [Vinay] - for CRS the number of gabors is 4, hence the
             % denominator changes to 4 from 3 in the next line
             numStimuli = length(stimOnTimes)/4; % = allTrials.targetPosAllTrials(trialEndIndex); %=length(stimOnTimes)/3;
-            
+                
             goodTrials.targetPos(correctIndex) = numStimuli;
             goodTrials.targetTime(correctIndex) = stimOnTimes(end);
             if isfield(trials,'fixate') % [Vinay] - This variable/field is absent if task does not require fixation
@@ -366,10 +374,20 @@ for i=1:numTrials
             % Find position of Gabor1
             gaborPos = find([trials.stimDesc.data.gaborIndex]==1); % could be 4 gabors for GRF protocol
             
-            if isCatchTrial
-                stimEndIndex = numStimuli;    % Take the last stimulus because it is still a valid stimulus
+%             if isCatchTrial
+%                 stimEndIndex = numStimuli;    % Take the last stimulus because it is still a valid stimulus
+%             else
+%                 stimEndIndex = numStimuli-1;  % Don't take the last one because it is the target
+%             end
+            
+            if trials.stimDesc.data(1).stimType == 0 % [Vinay] - If the target gabor is null then don't check for catch trial and consider all stimuli as valid for analyses
+                stimEndIndex = numStimuli;
             else
-                stimEndIndex = numStimuli-1;  % Don't take the last one because it is the target
+                if isCatchTrial
+                    stimEndIndex = numStimuli;    % Take the last stimulus because it is still a valid stimulus
+                else
+                    stimEndIndex = numStimuli-1;  % Don't take the last one because it is the target
+                end
             end
                 
             if stimEndIndex>0  % At least one stimulus

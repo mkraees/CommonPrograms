@@ -86,7 +86,7 @@ if strcmpi(gridType,'Microelectrode')
             79 80 84 86 87 89 91 94 63 95;
             00 81 83 85 88 90 92 93 96 00];
         
-    elseif strcmp(subjectName,'alpa') || strcmp(subjectName,'kesari') || isempty(subjectName)
+    elseif strcmp(subjectName,'alpa') || strcmp(subjectName,'kesari') || strcmp(subjectName,'test') || isempty(subjectName)
         
         electrodeArray = ...
            [00 88 78 68 58 48 38 28 18 00;
