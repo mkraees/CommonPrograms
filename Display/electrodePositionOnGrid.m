@@ -1,12 +1,11 @@
 function [row,column,electrodeArray] = electrodePositionOnGrid(electrodeNum,gridType,subjectName,gridLayout)
 
 if ~exist('subjectName','var');         subjectName=[];                 end
-if ~exist('gridLayout','var');         gridLayout=1;                 end
-if ~exist('gridType','var');         gridType='Microelectrode';                 end
+if ~exist('gridLayout','var');         gridLayout=1;                    end
+if ~exist('gridType','var');         gridType='Microelectrode';         end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% EEG %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if strcmpi(gridType,'EEG')
-    
     if gridLayout == 1 % EasyCap 64 electrodes
         
         electrodeArray = ...
@@ -18,10 +17,11 @@ if strcmpi(gridType,'EEG')
              31 57 27 43 23 62 24 44 28 58 32;
              00 15 51 07 37 19 38 08 52 16 00;
              00 00 59 00 45 63 46 00 60 00 00;
-             00 00 00 00 09 64 10 00 00 00 00;
+             00 00 00 00 09 64 10 00 00 00 00];
              00 00 00 00 00 00 00 00 00 00 00];
          
          electrodeLabelArray = [];
+         
 %          electrodeLabelArray = ...
 %             ['   ' '   ' '   ' '   ' 'Fp1' 'Fpz' 'Fp2' '   ' '   ' '   ' '   ';
 %              '   ' '   ' 'AF7' '   ' 'AF3' '   ' 'AF4' '   ' 'AF8' '   ' '   ';
@@ -31,9 +31,21 @@ if strcmpi(gridType,'EEG')
 %              'TP9' 'TP7' 'CP5' 'CP3' 'CP1' 'CPz' 'CP2' 'CP4' 'CP6' 'TP8' 'TP10';
 %              '   ' 'P7' 'P5' 'P3' 'P1' 'Pz' 'P2' 'P4' 'P6' 'P8' '   ';
 %              '   ' '   ' 'PO7' '   ' 'PO3' 'POz' 'PO4' '   ' 'PO8' '   ' '   ';
-%              '   ' '   ' '   ' '   ' 'O1' 'Oz' 'O2' '   ' '   ' '   ' '   ';
-%              '   ' '   ' '   ' '   ' '   ' '   ' '   ' '   ' '   ' '   ' '   '];
-        
+%              '   ' '   ' '   ' '   ' 'O1' 'Oz' 'O2' '   ' '   ' '   ' '   '];
+%              '   ' '   ' '   ' '   ' '   ' '   ' '   ' '   ' '   ' '   '];
+    
+    elseif gridLayout == 2 % actiCap 64 electrodes
+         electrodeArray = ...
+            [00 00 00 01 00 00 00 02 00 00 00;
+             00 33 00 34 00 00 00 35 00 36 00;
+             00 03 37 04 38 05 39 06 40 07 00;
+             41 42 08 43 09 00 10 44 11 45 46;
+             00 12 47 13 48 14 49 15 50 16 00;
+             17 51 18 52 19 53 20 54 21 55 22;
+             00 23 56 24 57 25 58 26 59 27 00;
+             28 60 00 61 00 62 00 63 00 64 32;
+             00 00 00 29 00 30 00 31 00 00 00];
+         
     elseif gridLayout == 3 % 10-20 system
         electrodeArray = ...
             [00 00 00 01 00 02 00 00 00 00;

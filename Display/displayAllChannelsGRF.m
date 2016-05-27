@@ -1,8 +1,9 @@
 % Display All Channels
-function displayAllChannelsGRF(subjectName,expDate,protocolName,folderSourceString,gridType)
+function displayAllChannelsGRF(subjectName,expDate,protocolName,folderSourceString,gridType,gridLayout)
 
 if ~exist('folderSourceString','var');   folderSourceString='E:';       end
 if ~exist('gridType','var');             gridType='EEG';                end
+if ~exist('gridLayout','var');          gridLayout=0;                   end
 
 folderName = fullfile(folderSourceString,'data',subjectName,gridType,expDate,protocolName);
 
@@ -303,15 +304,13 @@ else
     highImpChannels=[];
 end
      
-hElectrodes = showElectrodeLocations(electrodeGridPos,highImpChannels,'m',[],0,0,gridType,subjectName);
-              showElectrodeLocations(electrodeGridPos,badChannels,'r',[],1,0,gridType,subjectName);
+hElectrodes = showElectrodeLocations(electrodeGridPos,highImpChannels,'m',[],0,0,gridType,subjectName,gridLayout);
+              showElectrodeLocations(electrodeGridPos,badChannels,'r',[],1,0,gridType,subjectName,gridLayout);
 
 % Get main plot and message handles
-if strcmpi(gridType,'ECoG')
-    plotHandles = getPlotHandles(8,10);
-else
-    plotHandles = getPlotHandles(10,10);
-end
+[~,~,electrodeArray] = electrodePositionOnGrid(1,gridType,subjectName,gridLayout);
+[numRows,numCols] = size(electrodeArray);
+plotHandles = getPlotHandles(numRows,numCols);
 
 hMessage = uicontrol('Unit','Normalized','Position',[0 0.975 1 0.025],...
     'Style','text','String',[subjectName expDate protocolName],'FontSize',fontSizeLarge);
@@ -354,13 +353,13 @@ hMessage = uicontrol('Unit','Normalized','Position',[0 0.975 1 0.025],...
                 inhibitedElectrodes = (channelsStored(intersect(find(baselineFiringRate>=5),find(stimulusFiringRate<=5))));
                 disp(['responsive: ' num2str(responsiveElectrodes)]);
                 disp(['inhibited : ' num2str(inhibitedElectrodes)]);
-                showElectrodeLocations(electrodeGridPos,responsiveElectrodes,'b',hElectrodes,1,0,gridType,subjectName);
-                showElectrodeLocations(electrodeGridPos,inhibitedElectrodes,'g',hElectrodes,1,0,gridType,subjectName);
+                showElectrodeLocations(electrodeGridPos,responsiveElectrodes,'b',hElectrodes,1,0,gridType,subjectName,gridLayout);
+                showElectrodeLocations(electrodeGridPos,inhibitedElectrodes,'g',hElectrodes,1,0,gridType,subjectName,gridLayout);
             
             else
                 channelsStored = analogChannelsStored;
                 plotLFPData(plotHandles,channelsStored,goodPos,folderLFP,...
-                analysisType,timeVals,plotColor,blRange,stRange,gridType,subjectName);
+                analysisType,timeVals,plotColor,blRange,stRange,gridType,subjectName,gridLayout);
             end
             
             if analysisType<=2 % ERP or spikes
@@ -369,9 +368,9 @@ hMessage = uicontrol('Unit','Normalized','Position',[0 0.975 1 0.025],...
                 xRange = [str2double(get(hFFTMin,'String')) str2double(get(hFFTMax,'String'))];
             end
             
-            yRange = getYLims(plotHandles,channelsStored,gridType,subjectName);
+            yRange = getYLims(plotHandles,channelsStored,gridType,subjectName,gridLayout);
             set(hYMin,'String',num2str(yRange(1))); set(hYMax,'String',num2str(yRange(2)));
-            rescaleData(plotHandles,channelsStored,[xRange yRange],gridType,subjectName);
+            rescaleData(plotHandles,channelsStored,[xRange yRange],gridType,subjectName,gridLayout);
         end
     end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -392,7 +391,7 @@ hMessage = uicontrol('Unit','Normalized','Position',[0 0.975 1 0.025],...
         end
 
         yRange = [str2double(get(hYMin,'String')) str2double(get(hYMax,'String'))];
-        rescaleData(plotHandles,channelsStored,[xRange yRange],gridType,subjectName);
+        rescaleData(plotHandles,channelsStored,[xRange yRange],gridType,subjectName,gridLayout);
 
     end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -412,8 +411,8 @@ hMessage = uicontrol('Unit','Normalized','Position',[0 0.975 1 0.025],...
             xRange = [str2double(get(hFFTMin,'String')) str2double(get(hFFTMax,'String'))];
         end
 
-        yRange = getYLims(plotHandles,channelsStored,gridType,subjectName);
-        rescaleData(plotHandles,channelsStored,[xRange yRange],gridType,subjectName);
+        yRange = getYLims(plotHandles,channelsStored,gridType,subjectName,gridLayout);
+        rescaleData(plotHandles,channelsStored,[xRange yRange],gridType,subjectName,gridLayout);
     end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function holdOn_Callback(source,~)
@@ -451,7 +450,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main function that plots the data
 function plotLFPData(plotHandles, channelsStored, goodPos, ...
-    folderData, analysisType, timeVals, plotColor,blRange,stRange,gridType,subjectName)
+    folderData, analysisType, timeVals, plotColor,blRange,stRange,gridType,subjectName,gridLayout)
 
 if isempty(goodPos)
     disp('No entries for this combination..')
@@ -480,7 +479,7 @@ else
         disp(['Plotting electrode ' num2str(channelNum)]);
 
         % get position
-        [row,column] = electrodePositionOnGrid(channelNum,gridType,subjectName);
+        [row,column] = electrodePositionOnGrid(channelNum,gridType,subjectName,gridLayout);
 
         if analysisType == 1        % compute ERP
             clear signal analogData
@@ -497,7 +496,7 @@ else
             disp('Use plotSpikeData instead of plotLFPData...');
         else
             clear signal analogData
-            load([folderData 'elec' num2str(channelNum)]);
+            load(fullfile(folderData,['elec' num2str(channelNum)]));
             if removeAvgRef
                 analogData = analogData-avgRef;
             end
@@ -580,7 +579,7 @@ else
 end
 end   
 
-function yRange = getYLims(plotHandles,channelsStored,gridType,subjectName)
+function yRange = getYLims(plotHandles,channelsStored,gridType,subjectName,gridLayout)
 
 % Initialize
 yMin = inf;
@@ -589,7 +588,7 @@ yMax = -inf;
 for i=1:length(channelsStored)
     channelNum = channelsStored(i);
     % get position
-    [row,column] = electrodePositionOnGrid(channelNum,gridType,subjectName);
+    [row,column] = electrodePositionOnGrid(channelNum,gridType,subjectName,gridLayout);
     
     axis(plotHandles(row,column),'tight');
     tmpAxisVals = axis(plotHandles(row,column));
@@ -602,7 +601,7 @@ for i=1:length(channelsStored)
 end
 yRange = [yMin yMax];
 end
-function rescaleData(plotHandles,channelsStored,axisLims,gridType,subjectName)
+function rescaleData(plotHandles,channelsStored,axisLims,gridType,subjectName,gridLayout)
 
 [numRows,numCols] = size(plotHandles);
 labelSize=12;
@@ -610,10 +609,10 @@ for i=1:length(channelsStored)
     channelNum = channelsStored(i);
     
     % get position
-   [row,column] = electrodePositionOnGrid(channelNum,gridType,subjectName);
+   [row,column] = electrodePositionOnGrid(channelNum,gridType,subjectName,gridLayout);
     
     axis(plotHandles(row,column),axisLims);
-    if (row==numRows && rem(column,2)==1)
+    if (row==numRows && rem(column,2)==rem(numCols+1,2))
         if column~=1
             set(plotHandles(row,column),'YTickLabel',[],'fontSize',labelSize);
         end

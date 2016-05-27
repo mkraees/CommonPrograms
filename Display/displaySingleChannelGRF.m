@@ -1,9 +1,10 @@
 % Displays data from a single electrode
 
-function displaySingleChannelGRF(subjectName,expDate,protocolName,folderSourceString,gridType)
+function displaySingleChannelGRF(subjectName,expDate,protocolName,folderSourceString,gridType,gridLayout)
 
 if ~exist('folderSourceString','var');  folderSourceString='F:';        end
-if ~exist('gridType','var');             gridType='ECoG';               end
+if ~exist('gridType','var');            gridType='Microelectrode';      end
+if ~exist('gridLayout','var');          gridLayout=0;                   end
 
 folderName = fullfile(folderSourceString,'data',subjectName,gridType,expDate,protocolName);
 
@@ -336,7 +337,7 @@ uicontrol('Parent',hPlotOptionsPanel,'Unit','Normalized', ...
 % Get electrode array information
 electrodeGridPos = [staticStartPos panelStartHeight staticPanelWidth panelHeight];
 hElectrodes = showElectrodeLocations(electrodeGridPos,analogChannelsStored(get(hAnalogChannel,'val')), ...
-    colorNames(get(hChooseColor,'val')),[],1,0,gridType,subjectName);
+    colorNames(get(hChooseColor,'val')),[],1,0,gridType,subjectName,gridLayout);
 
 % Make plot for RFMap, centerRFMap and main Map
 if length(aValsUnique)>=5
@@ -491,7 +492,7 @@ hSigmaPlot        = getPlotHandles(1,length(sValsUnique),sigmaGrid,0.002);
         rescaleData(hOrientationPlot,xMin,xMax,getYLims(hOrientationPlot));
         rescaleData(hSpatialFreqPlot,xMin,xMax,getYLims(hSpatialFreqPlot));
         rescaleData(hSigmaPlot,xMin,xMax,getYLims(hSigmaPlot));
-        showElectrodeLocations(electrodeGridPos,channelNumber,plotColor,hElectrodes,holdOnState,0,gridType,subjectName);
+        showElectrodeLocations(electrodeGridPos,channelNumber,plotColor,hElectrodes,holdOnState,0,gridType,subjectName,gridLayout);
     end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function rescaleY_Callback(~,~)

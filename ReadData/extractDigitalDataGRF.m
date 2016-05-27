@@ -85,7 +85,7 @@ else
             stimResults.azimuth = convertUnits(azimuth',100);
             stimResults.elevation = convertUnits(elevation',100);
             stimResults.contrast = convertUnits(contrast',10);
-            stimResults.temporalFrequency = convertUnits(temporalFrequency',100);
+            stimResults.temporalFrequency = convertUnits(temporalFrequency',10);
             stimResults.radius = convertUnits(radius',100);
             stimResults.sigma = convertUnits(sigma',100);
             stimResults.orientation = convertUnits(orientation');

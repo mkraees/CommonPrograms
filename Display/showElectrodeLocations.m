@@ -3,15 +3,10 @@ function plotHandle = showElectrodeLocations(gridPosition,highlightElectrodes,co
 if ~exist('subjectName','var');          subjectName=[];                end
 if ~exist('hideElectrodeNums','var');    hideElectrodeNums=0;           end
 if ~exist('gridType','var');             gridType = 'Microelectrode';   end
-if ~exist('gridLayout','var');             gridLayout = 1;              end
+if ~exist('gridLayout','var');           gridLayout=2;                  end
 
-if strcmpi(gridType,'ECoG')
-    numRows=8;numCols=10;
-elseif strcmpi(gridType,'Microelectrode')
-    numRows=10;numCols=10;
-else
-    numRows=10;numCols=11;
-end
+[~,~,electrodeArray] = electrodePositionOnGrid(1,gridType,subjectName,gridLayout);
+[numRows,numCols] = size(electrodeArray);
 
 if ~exist('plotHandle','var') || isempty(plotHandle)
     plotHandle = subplot('Position',gridPosition,'XTickLabel',[],'YTickLabel',[],'XTick',[],'YTick',[],'box','on');
@@ -58,9 +53,7 @@ if ~isempty(highlightElectrodes)
         end
     end
 else
-    
-    [~,~,electrodeArray] = electrodePositionOnGrid(1,gridType,subjectName,1);
-    
+    [~,~,electrodeArray] = electrodePositionOnGrid(1,gridType,subjectName,gridLayout);
 end
 
 % Write electrode numbers

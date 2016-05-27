@@ -35,7 +35,7 @@ disp(['Total number of Analog channels recorded: ' num2str(cAnalog)]);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 analysisOnsetTimes = goodStimTimes + timeStartFromBaseLine;
-times = eegInfo.times/Fs;
+times = eegInfo.times/1000; % This is in ms
 
 if (cAnalog>0)
     
