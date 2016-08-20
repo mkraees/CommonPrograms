@@ -131,6 +131,7 @@ eotCodesLL = LL.eotCode;
 if useSimpleCodeFlag
     eotCodes=eotCodesLL;
 end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% Compare TS and TE data %%%%%%%%%%%%%%%%%%%%%%%
 diffTD = diff(trialStartTimes); diffTL = diff(trialStartTimesLL);
 

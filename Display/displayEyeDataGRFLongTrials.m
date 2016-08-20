@@ -260,6 +260,14 @@ hTMax = uicontrol('Parent',hTimingPanel,'Unit','Normalized', ...
             c = numberOfCategories+1; % Not required, computed for completeness 
             t = get(hTemporalFreq,'val');
             
+        elseif strcmp(protocolType,'ORI') % Contrast will be compared
+            numberOfCategories = length(oValsUnique);
+            s = get(hSigma,'val');
+            f = get(hSpatialFreq,'val');
+            c = get(hContrast,'val');
+            t = get(hTemporalFreq,'val');
+            o = numberOfCategories+1; % Not required, computed for completeness
+            
         else % Sigma will be compared
             numberOfCategories = length(sValsUnique);
             s = numberOfCategories+1; % Not required, computed for completeness
@@ -485,7 +493,10 @@ for i=1:length(expDates)
     load(fullfile(folderSegment,'eyeData','eyeDataDeg'));
     
     % eyeSpeed
+    eyeDataDegX=cell2mat(eyeDataDegX)';
+    eyeDataDegY=cell2mat(eyeDataDegY)';
     lengthEyeSignal = size(eyeDataDegX,2);
+    
     for j=1:size(eyeDataDegX,1)
         eyeSpeedX(j,:) = [eyeDataDegX(j,2:lengthEyeSignal)-eyeDataDegX(j,1:lengthEyeSignal-1) 0];
         eyeSpeedY(j,:) = [eyeDataDegY(j,2:lengthEyeSignal)-eyeDataDegY(j,1:lengthEyeSignal-1) 0];
@@ -502,7 +513,7 @@ for i=1:length(expDates)
     
     % parameterCombinations
     [parameterCombinations,aValsUnique,eValsUnique,sValsUnique,...
-    fValsUnique,~,cValsUnique,tValsUnique] = loadParameterCombinations(folderExtract);
+    fValsUnique,oValsUnique,cValsUnique,tValsUnique] = loadParameterCombinations(folderExtract);
 
     if strcmp(protocolType,'SF')
         
@@ -560,6 +571,25 @@ for i=1:length(expDates)
         end
         
         comparisonDataValues = cValsUnique;
+        
+    elseif strcmp(protocolType,'ORI')
+        
+        for j=1:numberOfCategories
+            eyeIndices = inverseMap(intersect(parameterCombinations{a,e,s,f,o,j,t},allUsefulStims));
+            eyeX{j} = cat(1,eyeX{j},eyeDataDegX(eyeIndices,:));
+            eyeY{j} = cat(1,eyeY{j},eyeDataDegY(eyeIndices,:));
+            
+            clear MStmp numMStmp
+            [MStmp,numMStmp] = findMicroSaccades(eyeSpeedMag(eyeIndices,:),cutoff,timeValsEyePos,timeRange);
+            MSData{j} = [MSData{j} MStmp];
+            numMSInRange{j}  = [numMSInRange{j} numMStmp];
+            
+            clear tmpEyeSpeeds
+            tmpEyeSpeeds = eyeSpeedMag(eyeIndices,:);
+            allEyeSpeeds=cat(1,allEyeSpeeds,tmpEyeSpeeds(:));
+        end
+        
+        comparisonDataValues = oValsUnique;
     else
         
         for j=1:numberOfCategories

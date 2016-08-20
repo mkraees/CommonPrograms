@@ -3,7 +3,7 @@
 % 2. maxLimit
 % If yes, that trial is marked as a bad trial
 
-function [allBadTrials,badTrials] = findBadTrialsWithLFPv2(monkeyName,expDate,protocolName,folderSourceString,gridType,checkTheseElectrodes,processAllElectrodes,threshold,maxLimit,showElectrodes,minLimit,saveDataFlag,checkPeriod)
+function [allBadTrials,badTrials] = findBadTrialsWithLFPv2(monkeyName,expDate,protocolName,folderSourceString,gridType,checkTheseElectrodes,processAllElectrodes,threshold,maxLimit,showElectrodes,minLimit,saveDataFlag,checkPeriod,rejectTolerance)
 
 if ~exist('checkTheseElectrodes','var');     checkTheseElectrodes = [33 12 80 63 44];   end
 if ~exist('processAllElectrodes','var');     processAllElectrodes = 0;                  end
@@ -65,6 +65,25 @@ for i=1:numElectrodes
 end
 
 disp(['total Trials: ' num2str(numTrials) ', bad trials: ' num2str(badTrials)]);
+
+% [Vinay] - decide as per a tolerance for the percent of electrodes showing
+% a particular stimulus as bad
+if exist('rejectTolerance','var')
+    badTrials = [];
+    for n=1:numTrials
+        trialCount=0;
+        for i=1:numElectrodes
+            if ~isempty(find(allBadTrials{i} == n, 1))
+                trialCount=trialCount+1;
+            end
+        end
+        trialPercent = trialCount/numElectrodes;
+        if trialPercent>=rejectTolerance
+            badTrials = cat(1,badTrials,n);
+        end
+    end
+end
+%-----
 
 for i=1:numElectrodes
     j = find(analogChannelsStored==checkTheseElectrodes(i));

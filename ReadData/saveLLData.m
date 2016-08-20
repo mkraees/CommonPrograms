@@ -16,9 +16,21 @@
 % 19 March 2015: Adding endTime (trialEnd) in GRF.
 % 9th October 2015: Adding endTime and trialCertify in SRC.
 
+% 05 August 2016: [Vinay] Adding endTime in CRS
+
 function LLFileExistsFlag = saveLLData(subjectName,expDate,protocolName,folderSourceString,gridType,frameRate)
 
 datFileName = fullfile(folderSourceString,'data','rawData',[subjectName expDate],[subjectName expDate protocolName '.dat']);
+
+datFileInfoName = fullfile(folderSourceString,'data','rawData',[subjectName expDate],[subjectName expDate protocolName '_fileInfo.mat']);
+removeFile=1; % [Vinay] - added this loop to delete the already generated files (due to which MATLAB keeps throwing an error)
+if removeFile
+    if exist(datFileInfoName,'file')
+        disp('Deleting the already existing Lablib data Info file');
+        delete(datFileInfoName);
+    end
+end
+
 if ~exist(datFileName,'file')
     disp('Lablib data file does not exist');
     LLFileExistsFlag = 0;
@@ -378,6 +390,7 @@ spatialPhaseDeg = []; % [Vinay] - for CRS
 
 eotCode=[];
 myEotCode=[];
+endTime=[];
 startTime=[];
 instructTrial=[];
 catchTrial=[];
@@ -399,6 +412,7 @@ for i=1:numTrials
     
     if isfield(trials,'trialEnd')
         eotCode = [eotCode [trials.trialEnd.data]];
+        endTime = [endTime [trials.trialEnd.timeMS]];
     end
     
     if isfield(trials,'myTrialEnd')
@@ -467,6 +481,7 @@ end
 LL.eotCode = eotCode;
 LL.myEotCode = myEotCode;
 LL.startTime = startTime/1000; % in seconds
+LL.endTime = endTime/1000; % in seconds
 LL.instructTrial = instructTrial;
 LL.catchTrial = catchTrial;
 LL.trialCertify = trialCertify;

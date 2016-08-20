@@ -46,11 +46,17 @@ trialEvents{2} = 'TE'; % Trial End
 load(fullfile(folderOut,'digitalEvents.mat'));
 
 allDigitalCodesInDec = [digitalCodeInfo.codeNumber];
+useSingelITC18Flag=1;
+if max(allDigitalCodesInDec)<=128
+    useSimpleCodeFlag=1;
+else
+    useSimpleCodeFlag=0;
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Find the times and values of the events in trialEvents
 
 for i=1:length(trialEvents)
-    pos = find(convertStrCodeToDec(trialEvents{i})==allDigitalCodesInDec);
+    pos = find(convertStrCodeToDec(trialEvents{i},useSingelITC18Flag,useSimpleCodeFlag)==allDigitalCodesInDec);
     if isempty(pos)
         disp(['Code ' trialEvents{i} ' not found!!']);
     else
@@ -61,7 +67,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load Lablib data structure
-load(fullfile(folderExtract,'LL.mat'));
+load(fullfile(folderOut,'LL.mat'));
 
 % Determine active gabors
 s1 = sum(LL.stimType1); % This is 0 if the gabor is null
@@ -154,10 +160,13 @@ stimResults.side = activeSide;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Get timing
-trialStartTimes = [digitalCodeInfo(find(convertStrCodeToDec('TS')==allDigitalCodesInDec)).time];
-eotCodes = convertUnits([digitalCodeInfo(find(convertStrCodeToDec('TE')==allDigitalCodesInDec)).value])';
+trialStartTimes = [digitalCodeInfo(find(convertStrCodeToDec('TS',useSingelITC18Flag,useSimpleCodeFlag)==allDigitalCodesInDec)).time];
+eotCodes = convertUnits([digitalCodeInfo(find(convertStrCodeToDec('TE',useSingelITC18Flag,useSimpleCodeFlag)==allDigitalCodesInDec)).value])';
 trialStartTimesLL = LL.startTime;
 eotCodesLL = LL.eotCode;
+if useSimpleCodeFlag
+    eotCodes=eotCodesLL;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% Compare TS and TE data %%%%%%%%%%%%%%%%%%%%%%%
 diffTD = diff(trialStartTimes); diffTL = diff(trialStartTimesLL);

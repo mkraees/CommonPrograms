@@ -210,6 +210,24 @@ if hideSomeDigitalCode
             sp = [spatialPhase,spatialPhase,spatialPhase]; spatialPhase = reshape(sp',[],1);
             g1 = 1:2:length(contrast); g2 = 2:2:length(contrast);
             con = [contrast(g1),contrast(g2),contrast(g1)]; contrast = reshape(con',[],1);
+        case 11 % Colour Dual Protocol
+            azi = [azimuth,azimuth]; azimuth = reshape(azi',[],1);
+            ele = [elevation,elevation]; elevation = reshape(ele',[],1);
+            tf = [temporalFrequency,temporalFrequency]; temporalFrequency = reshape(tf',[],1);
+            sig = [sigma,sigma]; sigma = reshape(sig',[],1);
+            sp = [spatialPhase,spatialPhase]; spatialPhase = reshape(sp',[],1);
+        case 12 % Colour Ring Protocol
+            azi = [azimuth,azimuth,azimuth]; azimuth = reshape(azi',[],1);
+            ele = [elevation,elevation,elevation]; elevation = reshape(ele',[],1);
+            o1 = 1:2:length(orientation); o2 = 2:2:length(orientation); 
+            ori = [orientation(o1),orientation(o2),orientation(o1)]; orientation = reshape(ori',[],1);
+            tf = [temporalFrequency,temporalFrequency,temporalFrequency]; temporalFrequency = reshape(tf',[],1);
+            sig = [sigma,sigma,sigma]; sigma = reshape(sig',[],1);
+            sf1 = 1:2:length(spatialFrequency); sf2 = 2:2:length(spatialFrequency); 
+            sf = [spatialFrequency(sf1),spatialFrequency(sf2),spatialFrequency(sf1)]; spatialFrequency = reshape(sf',[],1);
+            sp = [spatialPhase,spatialPhase,spatialPhase]; spatialPhase = reshape(sp',[],1);
+            g1 = 1:2:length(contrast); g2 = 2:2:length(contrast);
+            con = [contrast(g1),contrast(g2),contrast(g1)]; contrast = reshape(con',[],1);
     end
 end
 

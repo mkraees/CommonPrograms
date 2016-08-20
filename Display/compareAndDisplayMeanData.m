@@ -94,6 +94,7 @@ if displayPlot
     
     tableEntries{3,1} = 'Std';
     tableEntries{3,2} = num2str(std(allData),3);
+    disp(['n for std = ' num2str(length(allData))]);
     
     tableEntries{4,1} = 'SEM';
     tableEntries{4,2} = num2str(std(allData)/sqrt(length(allData)));
