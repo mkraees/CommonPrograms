@@ -2,6 +2,11 @@
 % 0 - Mapping 0
 % 1 - Mapping 1
 % 2 - Task Gabor
+% *** The above is for GRF. For CRS:
+% 0 - Task gabor
+% 1 - gabor0 (S) (surround gabor)
+% 2 - gabor1 (R) (ring gabor)
+% 3 - gabor2 (C) (centre gabor)
 
 function matchingParameters=compareLLwithNEVCRS(folderExtract,~,showResults)
 
