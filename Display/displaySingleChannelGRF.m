@@ -4,7 +4,7 @@ function displaySingleChannelGRF(subjectName,expDate,protocolName,folderSourceSt
 
 if ~exist('folderSourceString','var');  folderSourceString='F:';        end
 if ~exist('gridType','var');            gridType='Microelectrode';      end
-if ~exist('gridLayout','var');          gridLayout=0;                   end
+if ~exist('gridLayout','var');          gridLayout=2;                   end
 
 folderName = fullfile(folderSourceString,'data',subjectName,gridType,expDate,protocolName);
 
@@ -1339,6 +1339,7 @@ end
 % load Data
 function [analogChannelsStored,timeVals,goodStimPos,analogInputNums] = loadlfpInfo(folderLFP) %#ok<*STOUT>
 load(fullfile(folderLFP,'lfpInfo.mat'));
+analogChannelsStored=sort(analogChannelsStored);
 if ~exist('analogInputNums','var')
     analogInputNums=[];
 end
@@ -1347,6 +1348,8 @@ function [neuralChannelsStored,SourceUnitID] = loadspikeInfo(folderSpikes)
 fileName = fullfile(folderSpikes,'spikeInfo.mat');
 if exist(fileName,'file')
     load(fileName);
+    [neuralChannelsStored,I]=sort(neuralChannelsStored);
+    SourceUnitID=SourceUnitID(I);
 else
     neuralChannelsStored=[];
     SourceUnitID=[];

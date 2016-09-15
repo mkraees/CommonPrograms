@@ -1,7 +1,9 @@
 % This program generates the parameterCombinations variable from the
 % stimResults
-function parameterCombinations = getDisplayCombinationsGRF(folderOut,goodStimNums)
-  
+function parameterCombinations = getDisplayCombinationsGRF(folderOut,goodStimNums,radiusToSigmaRatio)
+
+if ~exist('radiusToSigmaRatio','var');      radiusToSigmaRatio=3;       end
+
 load(fullfile(folderOut,'stimResults.mat'));
 
 % Five parameters are chosen:
@@ -27,7 +29,7 @@ parameters{8} = 'gaborNumber';
 aValsAll  = stimResults.azimuth;
 eValsAll  = stimResults.elevation;
 if isfield(stimResults,'radius')
-    sValsAll  = stimResults.radius/3;
+    sValsAll  = stimResults.radius/radiusToSigmaRatio;
 else
     sValsAll  = stimResults.sigma;
 end

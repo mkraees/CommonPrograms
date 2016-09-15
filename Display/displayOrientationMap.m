@@ -13,8 +13,10 @@
 % the max firing rates are higher than frCutoff and orientation selectivity
 % is higher than osCutoff.
 
-function [finalElectrodeList,finalOrientationPref,finalOrientationSelectivity,finalFiringRates] = displayOrientationMap(subjectName,expDates,protocolNames,folderSourceString,gridType,gridLims,sPos,fPos,frCutoff,osCutoff,stdPOCutoff)
+function [finalElectrodeList,finalOrientationPref,finalOrientationSelectivity,finalFiringRates] = displayOrientationMap(subjectName,expDates,protocolNames,folderSourceString,gridType,gridLims,aPos,ePos,sPos,fPos,frCutoff,osCutoff,stdPOCutoff)
 
+if ~exist('aPos','var');                aPos=1;                         end
+if ~exist('ePos','var');                ePos=1;                         end
 if ~exist('sPos','var');                sPos=1;                         end
 if ~exist('fPos','var');                fPos=1;                         end
 if ~exist('frCutoff','var');            frCutoff = 10;                  end
@@ -49,7 +51,9 @@ numElectrodes = length(electrodeList);
 
 for i=1:numDays
     clear expDate protocolName
-    [aziCenter(i),eleCenter(i),sValsUniqueAll{i},fValsUniqueAll{i},oValsUniqueAll{i}] = loadParameterCombinations(subjectName,expDates{i},protocolNames{i},folderSourceString,gridType);
+    [aValsUniqueAll{i},eValsUniqueAll{i},sValsUniqueAll{i},fValsUniqueAll{i},oValsUniqueAll{i}] = loadParameterCombinations(subjectName,expDates{i},protocolNames{i},folderSourceString,gridType);
+    aziCenter(i)=aValsUniqueAll{i}(aPos);
+    eleCenter(i)=eValsUniqueAll{i}(ePos);
 end
 
 % Check whether the values are the same across days

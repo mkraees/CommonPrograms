@@ -75,5 +75,7 @@ end
 
 if useSingleITC18Flag
     outNum=num/2;
+else
+    outNum=num;
 end
 end

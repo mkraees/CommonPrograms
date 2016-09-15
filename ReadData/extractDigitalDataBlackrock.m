@@ -6,11 +6,13 @@
 % We assume that the raw data is initially stored in
 % folderSourceString\data\rawData\{subjectName}{expDate}\
 
-function [hFile,digitalTimeStamps,digitalEvents]=extractDigitalDataBlackrock(subjectName,expDate,protocolName,folderSourceString,gridType)
+function [hFile,digitalTimeStamps,digitalEvents]=extractDigitalDataBlackrock(subjectName,expDate,protocolName,folderSourceString,gridType,folderDestinationString)
+
+if ~exist('folderDestinationString','var'); folderDestinationString=folderSourceString; end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fileName = [subjectName expDate protocolName '.nev'];
-folderName = fullfile(folderSourceString,'data',subjectName,gridType,expDate,protocolName);
+folderName = fullfile(folderDestinationString,'data',subjectName,gridType,expDate,protocolName);
 makeDirectory(folderName);
 folderIn = fullfile(folderSourceString,'data','rawData',[subjectName expDate]);
 folderExtract = fullfile(folderName,'extractedData');
