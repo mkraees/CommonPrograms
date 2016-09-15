@@ -73,7 +73,8 @@ if exist('rejectTolerance','var')
     for n=1:numTrials
         trialCount=0;
         for i=1:numElectrodes
-            if ~isempty(find(allBadTrials{i} == n, 1))
+            j = analogChannelsStored==checkTheseElectrodes(i);
+            if ~isempty(find(allBadTrials{j} == n, 1))
                 trialCount=trialCount+1;
             end
         end
