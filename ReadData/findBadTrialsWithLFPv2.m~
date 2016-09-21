@@ -3,17 +3,16 @@
 % 2. maxLimit
 % If yes, that trial is marked as a bad trial
 
-function [allBadTrials,badTrials] = findBadTrialsWithLFPv2(monkeyName,expDate,protocolName,folderSourceString,gridType,checkTheseElectrodes,processAllElectrodes,threshold,maxLimit,minLimit,showElectrodes,saveDataFlag,checkPeriod,rejectTolerance)
+function [allBadTrials,badTrials] = findBadTrialsWithLFPv2(monkeyName,expDate,protocolName,folderSourceString,gridType,checkTheseElectrodes,processAllElectrodes,threshold,maxLimit,showElectrodes,minLimit,saveDataFlag,checkPeriod,rejectTolerance)
 
 if ~exist('checkTheseElectrodes','var');     checkTheseElectrodes = [33 12 80 63 44];   end
 if ~exist('processAllElectrodes','var');     processAllElectrodes = 0;                  end
 if ~exist('folderSourceString','var');       folderSourceString = 'G:';                 end
 if ~exist('threshold','var');                threshold = 6;                             end
 if ~exist('minLimit','var');                 minLimit = -2000;                          end
-if ~exist('maxLimit','var');                 maxLimit = 1000;                           end
 if ~exist('saveDataFlag','var');             saveDataFlag = 1;                          end
-if ~exist('checkPeriod','var');              checkPeriod = [-0.7 0.8];                  end
-if ~exist('rejectTolerance','var');          rejectTolerance = 1;                       end
+if ~exist('checkPeriod','var');             checkPeriod = [-0.7 0.8];                   end
+if ~exist('checkPeriod','var');             checkPeriod = 1;                            end
 
 folderName = fullfile(folderSourceString,'data',monkeyName,gridType,expDate,protocolName);
 folderSegment = fullfile(folderName,'segmentedData');
@@ -99,7 +98,7 @@ end
 
 if saveDataFlag
     disp(['Saving ' num2str(length(badTrials)) ' bad trials']);
-    save(fullfile(folderSegment,'badTrials.mat'),'badTrials','checkTheseElectrodes','threshold','maxLimit','minLimit''checkPeriod','allBadTrials','nameElec','rejectTolerace');
+    save(fullfile(folderSegment,'badTrials.mat'),'badTrials','checkTheseElectrodes','threshold','maxLimit','checkPeriod','allBadTrials','nameElec','rejectTolerace');
 else
     disp('Bad trials will not be saved..');
 end

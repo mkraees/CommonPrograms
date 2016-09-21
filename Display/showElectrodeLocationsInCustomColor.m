@@ -32,7 +32,7 @@ if strcmpi(gridType,'ECoG')
 elseif strcmpi(gridType,'Microelectrode')
     numRows=10;numCols=10;
 else
-    numRows=10;numCols=11;
+    numRows=9;numCols=11;
 end
 [~,~,electrodeArray] = electrodePositionOnGrid(1,gridType,subjectName,gridLayout);
 
