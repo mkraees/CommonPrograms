@@ -9,7 +9,7 @@
 %==========================================================================
 
 
-function [allBadTrials, badTrials, nameElec] = findBadTrialsEEG(subjectName,expDate,protocolName,folderSourceString,gridType,...
+function [allBadTrials, badTrials, nameElec] = findBadTrialsEEGv2(subjectName,expDate,protocolName,folderSourceString,gridType,...
     checkTheseElectrodes,processAllElectrodes,threshold,maxLimit,minLimit,showElectrodes,saveDataFlag,checkPeriod,rejectTolerance,showTrials)
 
 if ~exist('checkTheseElectrodes','var')     checkTheseElectrodes = 1:64;   end
