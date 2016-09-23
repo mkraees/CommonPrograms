@@ -30,7 +30,13 @@ allBadTrials = cell(1,numElectrodes);
 nameElec = cell(1,numElectrodes);
 
 for i=1:numElectrodes
-    electrodeNum=analogChannelsStored(i);
+    if processAllElectrodes
+        electrodeNum=analogChannelsStored(i); % changed from checkTheseElectrodes
+        % to calculate bad trials for each electrode irrespective of the
+        % electrodes to be checked
+    else
+        electrodeNum=checkTheseElectrodes(i);
+    end
     load(fullfile(folderSegment,'LFP',['elec' num2str(electrodeNum) '.mat']));
     
     disp(['Processing electrode: ' num2str(electrodeNum)]);
@@ -55,14 +61,14 @@ for i=1:numElectrodes
     tmpBadTrials = unique([find(maxData > meanData + threshold * stdData) find(minData < meanData - threshold * stdData)]);
     tmpBadTrials2 = unique(find(maxData > maxLimit));
     tmpBadTrials3 = unique(find(minData < minLimit));
-    allBadTrials{i} = unique([tmpBadTrials tmpBadTrials2 tmpBadTrials3]);
+    allBadTrials{electrodeNum} = unique([tmpBadTrials tmpBadTrials2 tmpBadTrials3]);
 end
 
 numElectrodes = length(checkTheseElectrodes); % check the list for these electrodes only to generate the overall badTrials list
-j = find(analogChannelsStored==checkTheseElectrodes(1));
+j = checkTheseElectrodes(1);
 badTrials=allBadTrials{j};
 for i=1:numElectrodes
-    j = find(analogChannelsStored==checkTheseElectrodes(i));
+    j = checkTheseElectrodes(i);
     badTrials=intersect(badTrials,allBadTrials{j}); % in the previous case we took the union
 end
 
@@ -75,7 +81,7 @@ if exist('rejectTolerance','var')
     for n=1:numTrials
         trialCount=0;
         for i=1:numElectrodes
-            j = analogChannelsStored==checkTheseElectrodes(i);
+            j = checkTheseElectrodes(i);
             if ~isempty(find(allBadTrials{j} == n, 1))
                 trialCount=trialCount+1;
             end
@@ -89,8 +95,8 @@ end
 %-----
 
 for i=1:numElectrodes
-    j = find(analogChannelsStored==checkTheseElectrodes(i));
-    if length(allBadTrials{i}) ~= length(badTrials)
+    j = checkTheseElectrodes(i);
+    if length(allBadTrials{j}) ~= length(badTrials)
         disp(['Bad trials for electrode ' num2str(checkTheseElectrodes(i)) ': ' num2str(length(allBadTrials{j}))]);
     else
         disp(['Bad trials for electrode ' num2str(checkTheseElectrodes(i)) ': common bad trials only (' num2str(length(badTrials)) ')']);
@@ -99,7 +105,7 @@ end
 
 if saveDataFlag
     disp(['Saving ' num2str(length(badTrials)) ' bad trials']);
-    save(fullfile(folderSegment,'badTrials.mat'),'badTrials','checkTheseElectrodes','threshold','maxLimit','minLimit''checkPeriod','allBadTrials','nameElec','rejectTolerace');
+    save(fullfile(folderSegment,'badTrials.mat'),'badTrials','checkTheseElectrodes','threshold','maxLimit','minLimit''checkPeriod','allBadTrials','nameElec','rejectTolerance');
 else
     disp('Bad trials will not be saved..');
 end
@@ -110,15 +116,12 @@ lengthShowElectrodes = length(showElectrodes);
 if ~isempty(showElectrodes)
     for i=1:lengthShowElectrodes
         figure;
-        if lengthShowElectrodes>1
-            subplot(lengthShowElectrodes,1,i);
-        else
-            subplot(2,1,1);
-        end
+        subplot(2,1,1);
         channelNum = showElectrodes(i);
 
-        clear signal analogData
+        clear signal analogData analogDataSegment
         load(fullfile(folderSegment,'LFP',['elec' num2str(channelNum) '.mat']));
+        analogDataSegment = analogData;
         if numTrials<4000
             plot(timeVals,analogDataSegment(setdiff(1:numTrials,badTrials),:),'color','k');
             hold on;
@@ -130,17 +133,15 @@ if ~isempty(showElectrodes)
         end
         title(['electrode ' num2str(channelNum)]);
         axis tight;
-        
-        if lengthShowElectrodes==1
-            subplot(2,1,2);
-            plot(timeVals,analogDataSegment(setdiff(1:numTrials,badTrials),:),'color','k');
-            hold on;
-            j = analogChannelsStored==channelNum;
-            if ~isempty(allBadTrials{j})
-                plot(timeVals,analogDataSegment(allBadTrials{j},:),'color','r');
-            end
-            axis tight;
+
+        subplot(2,1,2);
+        plot(timeVals,analogDataSegment(setdiff(1:numTrials,badTrials),:),'color','k');
+        hold on;
+        j = channelNum;
+        if ~isempty(allBadTrials{j})
+            plot(timeVals,analogDataSegment(allBadTrials{j},:),'color','r');
         end
+        axis tight;
     end
 end
 end
