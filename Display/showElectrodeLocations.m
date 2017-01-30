@@ -5,16 +5,18 @@ if ~exist('hideElectrodeNums','var');    hideElectrodeNums=0;           end
 if ~exist('gridType','var');             gridType = 'Microelectrode';   end
 if ~exist('gridLayout','var');           gridLayout=2;                  end
 
-% [~,~,electrodeArray] = electrodePositionOnGrid(1,gridType,subjectName,gridLayout);
-% [numRows,numCols] = size(electrodeArray);
+[~,~,electrodeArray] = electrodePositionOnGrid(1,gridType,subjectName,gridLayout);
+[numRows,numCols] = size(electrodeArray);
 
-if strcmpi(gridType,'ECoG')
-    numRows=8;numCols=10;
-elseif strcmpi(gridType,'Microelectrode')
-    numRows=10;numCols=10;
-else
-    numRows=10;numCols=11;
-end
+% if strcmpi(gridType,'ECoG')
+%     numRows=8;numCols=10;
+% elseif strcmpi(gridType,'Microelectrode') && ~strcmpi(subjectName,'tutu')
+%     numRows=10;numCols=10;
+% elseif strcmpi(gridType,'Microelectrode') && strcmpi(subjectName,'tutu')
+%     numRows=10;numCols=9;
+% else
+%     numRows=9;numCols=11;
+% end
 
 if ~exist('plotHandle','var') || isempty(plotHandle)
     plotHandle = subplot('Position',gridPosition,'XTickLabel',[],'YTickLabel',[],'XTick',[],'YTick',[],'box','on');

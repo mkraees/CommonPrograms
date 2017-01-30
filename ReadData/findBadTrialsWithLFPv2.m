@@ -105,7 +105,7 @@ end
 
 if saveDataFlag
     disp(['Saving ' num2str(length(badTrials)) ' bad trials']);
-    save(fullfile(folderSegment,'badTrials.mat'),'badTrials','checkTheseElectrodes','threshold','maxLimit','minLimit''checkPeriod','allBadTrials','nameElec','rejectTolerance');
+    save(fullfile(folderSegment,'badTrials.mat'),'badTrials','checkTheseElectrodes','threshold','maxLimit','minLimit','checkPeriod','allBadTrials','nameElec','rejectTolerance');
 else
     disp('Bad trials will not be saved..');
 end
@@ -144,4 +144,38 @@ if ~isempty(showElectrodes)
         axis tight;
     end
 end
+
+%**************************************************************************
+% summary plot
+%--------------------------------------------------------------------------
+allBadTrialsMatrix = zeros(length(allBadTrials),numTrials);
+for i=1:length(allBadTrials)
+    allBadTrialsMatrix(i,allBadTrials{i}) = 1;
+end
+
+summaryFig = figure('name',[monkeyName expDate protocolName],'numbertitle','off');
+h0 = subplot('position',[0.8 0.8 0.18 0.18]); set(h0,'visible','off');
+text(0.05, 0.7, ['thresholds (uV): [' num2str(minLimit) ' ' num2str(maxLimit) ']'],'fontsize',12,'unit','normalized','parent',h0);
+text(0.05, 0.4, ['checkPeriod (s): [' num2str(checkPeriod(1)) ' ' num2str(checkPeriod(2)) ']'],'fontsize',12,'unit','normalized','parent',h0);
+
+h1 = getPlotHandles(1,1,[0.07 0.07 0.7 0.7]);
+subplot(h1);
+imagesc(1:numTrials,length(allBadTrials):-1:1,flipud(allBadTrialsMatrix),'parent',h1);
+set(gca,'YDir','normal'); colormap(gray);
+xlabel('# trial num','fontsize',15,'fontweight','bold');
+ylabel('# electrode num','fontsize',15,'fontweight','bold');
+
+h2 = getPlotHandles(1,1,[0.07 0.8 0.7 0.17]);
+h3 = getPlotHandles(1,1,[0.8 0.07 0.18 0.7]);
+subplot(h2); cla; set(h2,'nextplot','add');
+stem(h2,1:numTrials,sum(allBadTrialsMatrix,1)); axis('tight');
+if ~isempty(badTrials)
+    stem(h2,badTrials,sum(allBadTrialsMatrix(:,badTrials),1),'color','r');
+end
+subplot(h3);
+stem(h3,1:length(allBadTrials),sum(allBadTrialsMatrix,2)); axis('tight');
+view([90 -90]);
+
+saveas(summaryFig,fullfile(folderSegment,'summmaryBadTrials.fig'),'fig');
+%**************************************************************************
 end

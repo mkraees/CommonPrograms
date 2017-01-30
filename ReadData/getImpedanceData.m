@@ -4,7 +4,7 @@ folderNameRawData = fullfile(folderSourceString,'data','rawData',[subjectName ex
 folderNameSave = fullfile(folderSourceString,'data',subjectName,gridType,expDate);
 makeDirectory(folderNameSave);
 
-fileName = fullfile(folderNameRawData,[subjectName expDate 'impedance']);
+fileName = fullfile(folderNameRawData,[subjectName expDate 'Impedance']);
 if ~exist(fileName,'file')    
     fileName = [fileName '.txt'];             
 end

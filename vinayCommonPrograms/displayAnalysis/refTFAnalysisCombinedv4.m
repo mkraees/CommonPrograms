@@ -11,7 +11,7 @@ function refTFAnalysisCombinedv4(subjectName,expDate,protocolName,folderSourceSt
 
 if ~exist('folderSourceString','var')  folderSourceString='/media/store/';        end
 if ~exist('gridType','var')            gridType='EEG';                  end
-if ~exist('loadProtocolNumber','var')  loadProtocolNumber = 11;         end % Vinay - anything greater than 10 will read the protocolNumber from the saved data
+if ~exist('loadProtocolNumber','var')  loadProtocolNumber = 13;         end % Vinay - anything greater than 12 will read the protocolNumber from the saved data
 
 %========================Define folder paths===============================
     folderName = fullfile(folderSourceString,'data',subjectName,gridType,expDate,protocolName);
@@ -43,13 +43,13 @@ if ~exist('loadProtocolNumber','var')  loadProtocolNumber = 11;         end % Vi
 % that one can directly pass the protocolNumber in case it is not recorded
 % in stimResults
 if strncmp(protocolName,'CRS',3)
-    if (loadProtocolNumber < 11)
+    if (loadProtocolNumber < 13)
         protocolNumber = loadProtocolNumber;
     else
         protocolNumber = getProtocolNumber(folderExtract);
     end
 else
-    protocolNumber = 11;
+    protocolNumber = 13;
 end
 
 % Vinay - get the particular gabors that were displayed in the protocol.
@@ -85,10 +85,10 @@ saveMPFlag = 1;
 % [Vinay] - define a flag to save HHT data if it is set
 saveHHTFlag = 1;
 % [Vinay] - define a flag to use badTrials for each electrode separately
-useAllBadTrials = 1;
+useAllBadTrials = 0;
 % [Vinay] - define a flag to use intersection of good trials across
 % electrodes or else to use individual electrodewise good trials
-intersectTrials = 0;
+intersectTrials = 1;
 
 % [Vinay] - set this flag if bipolar data is stored
 existsBipolarData = 0;
@@ -98,6 +98,8 @@ takeLogTrial = 0;
 % [Vinay] - set this if the bipolar pairs are made using complimentary
 % contralateral electrodes and not the nearest neighbour
 contralateralNeighbour = 1;
+% [Vinay] - show traces for each stimulus with a pause between traces
+showOnebyOne = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% Dynamic panel %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -724,7 +726,7 @@ if strncmp(protocolName,'CRS',3)
     % display the specific protocol being used
     protocolNameString = {'NoneProtocol';'RingProtocol';'ContrastRingProtocol';'DualContrastProtocol'; ...
         'DualOrientationProtocol';'DualPhaseProtocol';'OrientationRingProtocol';'PhaseRingProtocol'; ...
-        'Drifting Ring Protocol';'CrossOrientationProtocol';'AnnulusRingProtocol'};
+        'Drifting Ring Protocol';'CrossOrientationProtocol';'AnnulusRingProtocol';'ColourDualProtocol';'ColourRingProtocol'};
     % protocolNumber = getProtocolNumber(folderExtract);
 
     uicontrol('Parent',hSelectParamPanel,'Unit','Normalized', ...
@@ -737,11 +739,17 @@ end
 % Get plots and message handles
 
 % Get electrode array information
-gridLayout = 1; % 64 electrodes
+gridLayout = 2; % 64 electrodes
 electrodeGridPos = [staticStartPos panelStartHeight staticPanelWidth panelHeight];
-hElectrodes = showElectrodeLocations(electrodeGridPos,analogChannelsStored(get(hAnalogChannel,'val')), ...
-    colorNames(get(hChooseColor,'val')),[],1,0,gridType,subjectName,gridLayout);
 
+% load the microelectrode grid even for monkey EEG
+if strcmp(subjectName,'alpa')||strcmp(subjectName,'kesari')||strcmp(subjectName,'tutu')
+    hElectrodes = showElectrodeLocations(electrodeGridPos,analogChannelsStored(get(hAnalogChannel,'val')),...
+        colorNames(get(hChooseColor,'val')),[],1,0,'Microelectrode',subjectName,gridLayout);
+else
+    hElectrodes = showElectrodeLocations(electrodeGridPos,analogChannelsStored(get(hAnalogChannel,'val')),...
+        colorNames(get(hChooseColor,'val')),[],1,0,gridType,subjectName,gridLayout);
+end
 
 % Set up the plot box and its dimensions
 startXPos = staticStartPos; endXPos = 0.95; startYPos = 0.05; endYPos = 0.60;
@@ -1205,7 +1213,7 @@ uicontrol('Parent',hTFPlotSettingsPanel,'Unit','Normalized', ...
             analysisType,timeVals,plotColor,BLMin,BLMax,STMin,STMax,folderName, protocolNumber, notchData,useBipolar,plotSEM,holdOnState,plotLineWidth,...
             protocolName,useAllBadTrials,mtmParams,movingWin,fBandLow,fBandHigh,...
             spikeChannelNumber,unitID,STAMin,STAMax,removeMeanSTA,folderSpikes,cmin,cmax,fftmin,fftmax,tmin,tmax,drawStim,drawERP,drawFR,drawTF,drawTrends,drawFFT,...
-            subjectName,expDate,gridType,title1ON,title2ON,nShow,ignoreTrials,ignoreTrialNum,poolElec,spectrumType);
+            subjectName,expDate,gridType,title1ON,title2ON,nShow,ignoreTrials,ignoreTrialNum,poolElec,spectrumType,showOnebyOne);
         
 
         if analogChannelPos<=length(analogChannelsStored)
@@ -1232,7 +1240,11 @@ uicontrol('Parent',hTFPlotSettingsPanel,'Unit','Normalized', ...
             rescaleData(hVaryParamPlot,xMin,xMax,getYLims(hVaryParamPlot));
         end
         
-        showElectrodeLocations(electrodeGridPos,channelNumber,plotColor,hElectrodes,holdOnState,0,gridType,subjectName,gridLayout);
+        if strcmp(subjectName,'alpa')||strcmp(subjectName,'kesari')||strcmp(subjectName,'tutu')
+            showElectrodeLocations(electrodeGridPos,channelNumber,plotColor,hElectrodes,holdOnState,0,'Microelectrode',subjectName,gridLayout);
+        else
+            showElectrodeLocations(electrodeGridPos,channelNumber,plotColor,hElectrodes,holdOnState,0,gridType,subjectName,gridLayout);
+        end
     end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function rescaleY_Callback(~,~)
@@ -1428,6 +1440,20 @@ uicontrol('Parent',hTFPlotSettingsPanel,'Unit','Normalized', ...
                    
                case 10 %Annulus Fixed Protocol
                    set(hGabor7,'val',2);% 2 => C
+                   set(hGabor8,'val',3); % 3 => R
+                   
+                   set(hParam7,'val',9); % 9 => rad 
+                   set(hParam8,'val',9); % 9 => rad
+                   
+               case 11 % Colour Dual Protocol
+                   set(hGabor7,'val',2);% 2 => C
+                   set(hGabor8,'val',3); % 3 => R
+                   
+                   set(hParam7,'val',6); % 6 => ori
+                   set(hParam8,'val',6); % 6 => ori
+                   
+               case 12 % Colour Ring Protocol
+                   set(hGabor7,'val',4);% 2 => C
                    set(hGabor8,'val',3); % 3 => R
                    
                    set(hParam7,'val',9); % 9 => rad 
@@ -2029,7 +2055,7 @@ function plotLFPSpikeDataVaryParameters1Channel(plotHandles,channelString,analog
 analysisType,timeVals,plotColor,BLMin,BLMax,STMin,STMax,folderName, protocolNumber, notchData,useBipolar,plotSEM,holdOnState,plotLineWidth,...
 protocolName,useAllBadTrials,mtmParams,movingWin,fBandLow,fBandHigh,...
 spikeChannelNumber,unitID,STAMin,STAMax,removeMeanSTA,folderSpikes,cmin,cmax,fftmin,fftmax,tmin,tmax,drawStim,drawERP,drawFR,drawTF,drawTrends,drawFFT,...
-subjectName,expDate,gridType,title1ON,title2ON,nShow,ignoreTrials,ignoreTrialNum,poolElec,spectrumType)
+subjectName,expDate,gridType,title1ON,title2ON,nShow,ignoreTrials,ignoreTrialNum,poolElec,spectrumType,showOnebyOne)
 
 folderExtract = fullfile(folderName,'extractedData');
 folderSegment = fullfile(folderName,'segmentedData');
@@ -2340,7 +2366,7 @@ if analysisType == 8 % get all plots
     if drawTrends
         allplotsPosition = [0.05 0.05 0.6 0.9];
         
-        if protocolNumber ~= 10
+        if protocolNumber ~= 10 && protocolNumber ~= 12
             allplotsHandles = getPlotHandles(plotcount*numRows,numCols,allplotsPosition,gapX,gapY); % 4 rows for each 
             % case - stimulus, erp, spike rate, tf spectrum
         else
@@ -2368,7 +2394,7 @@ if analysisType == 8 % get all plots
         allplotsPosition = [0.05 0.05 0.9 0.9]; % full
 %         allplotsPosition = [0.05 0.1 0.9 0.55]; % lower half
 %         allplotsPosition = [0.05 0.65 0.9 0.3]; % upper half
-        if protocolNumber ~= 10
+        if protocolNumber ~= 10 && protocolNumber ~= 12
             allplotsHandles = getPlotHandles(plotcount*numRows,numCols,allplotsPosition,gapX,gapY); % 4 rows for each 
             % case - stimulus, erp, spike rate, tf spectrum
         else
@@ -2563,6 +2589,30 @@ for k=1:numRows
                            % not set equal to those for S. However, the rad of C is
                            % still a relevant parameter and has to be taken care of
                            pos3 = parameterCombinations{aLen(3),eLen(3),sLen(3),fLen(3),oLen(3),cLen(3),tLen(3),pLen(3),rList(3+(k-1)*3,j),3}; % for C - only rad
+                           
+                       case 11 % Colour Dual Protocol
+                           pos1 = parameterCombinations{aLen(1),eLen(1),sLen(1),fLen(1),oLen(1),cLen(1),tLen(1),pLen(1),rLen(1),1}; % for C
+                           % [Vinay] - S is hidden in this case and only C & R
+                           % define the stimuli. pos1 is therefore the full set
+                           % here
+                           pos2 = parameterCombinations{aLen(2),eLen(2),sLen(2),fList(2+(k-1)*3,j),oList(2+(k-1)*3,j),cList(2+(k-1)*3,j),tLen(2),pLen(2),rList(2+(k-1)*3,j),2}; % for R - only rad & ori
+                           % [Vinay] -  R params - ori, sf, cont & rad. Rest are matched to
+                           % C's params
+                           pos3 = parameterCombinations{aList(3+(k-1)*3,j),eList(3+(k-1)*3,j),sList(3+(k-1)*3,j),fList(3+(k-1)*3,j),oList(3+(k-1)*3,j),cList(3+(k-1)*3,j),tList(3+(k-1)*3,j),pList(3+(k-1)*3,j),rList(3+(k-1)*3,j),3};
+                           % for C. C is the defining gabor here
+                           
+                       case 12 % Colour Ring Protocol
+                           pos1 = parameterCombinations{aList(1+(k-1)*3,j),eList(1+(k-1)*3,j),sList(1+(k-1)*3,j),fList(1+(k-1)*3,j),oList(1+(k-1)*3,j),cList(1+(k-1)*3,j),tList(1+(k-1)*3,j),pList(1+(k-1)*3,j),rList(1+(k-1)*3,j),1};
+                           % S params define C & S
+                           % S i.e. kGabor0 corresponds to row number 1,4,7,..
+                           % and so on. Hence it is 1+(k-1)*3
+                           pos2 = parameterCombinations{aLen(2),eLen(2),sLen(2),fList(2+(k-1)*3,j),oList(2+(k-1)*3,j),cList(2+(k-1)*3,j),tLen(2),pLen(2),rList(2+(k-1)*3,j),2}; % for R - only rad & cont
+                           % [Vinay] -  C is matched to S and therefore the entries
+                           % for gabor3 i.e. can be ignored. Otherwise this can 
+                           % give spurious results if the param values for C are 
+                           % not set equal to those for S. However, the rad of C is
+                           % still a relevant parameter and has to be taken care of
+                           pos3 = parameterCombinations{aLen(3),eLen(3),sLen(3),fLen(3),oLen(3),cLen(3),tLen(3),pLen(3),rList(3+(k-1)*3,j),3}; % for C - only rad
 
                 otherwise
                     pos1 = parameterCombinations{aList(1+(k-1)*3,j),eList(1+(k-1)*3,j),sList(1+(k-1)*3,j),fList(1+(k-1)*3,j),oList(1+(k-1)*3,j),cList(1+(k-1)*3,j),tList(1+(k-1)*3,j),pList(1+(k-1)*3,j),rList(1+(k-1)*3,j),1};
@@ -2652,7 +2702,18 @@ for k=1:numRows
                 if analysisType == 1  || analysisType == 9      % compute ERP
                     
                     if analysisType == 9
-                        plot(plotHandles(k,j),timeVals,analogData(goodPos,:));
+%                         showOnebyOne = 1;
+                        if showOnebyOne
+                            set(plotHandles(k,j),'Nextplot','add');
+                            for tn = 1:length(goodPos)
+                                plot(plotHandles(k,j),timeVals,analogData(goodPos(tn),:));
+                                disp(['goodPos: ' num2str(goodPos(tn))]);
+                                xlabel(['goodPos: ' num2str(goodPos(tn))]);
+                                pause
+                            end
+                        else
+                            plot(plotHandles(k,j),timeVals,analogData(goodPos,:));
+                        end
                     end
                     set(plotHandles(k,j),'Nextplot','add');
                     
@@ -2787,9 +2848,13 @@ for k=1:numRows
                         load(fullfile(folderSegment,'Segments',['elec' num2str(spikeChannelNumber) '.mat']));
                         plot(plotHandles(k,j),segmentData,'color',plotColor);
                         meanSpikeWaveform = mean(segmentData,2);
+                        snr = getSNR(segmentData);
                         set(plotHandles(k,j),'Nextplot','add');
                         plot(plotHandles(k,j),meanSpikeWaveform,'color',[0.6 0.8 0.8],'Linewidth',plotLineWidth);
+                        text(0.1,0.8,num2str(snr),'color','r','unit','normalized','parent',plotHandles(k,j));
                         set(plotHandles(k,j),'Nextplot','replace');
+                        drawnow;
+                        pause;
                     end
                     
                     
@@ -2815,7 +2880,7 @@ for k=1:numRows
                     
                     if analysisType == 8 % get all plots
                         
-                        if protocolNumber == 10 % AFP
+                        if protocolNumber == 10 || protocolNumber == 12 % AFP
                             jAFP = jAFP + 1;
                             jx = jAFP;
                         else
@@ -2847,7 +2912,15 @@ for k=1:numRows
 
                             kx = plotcount*(k-1) + 1;
 
-                            gabP = drawStimulus(allplotsHandles(kx,jx),gaborBackground,gaborRing,titleStringStim,protocolNumber);
+                            if protocolNumber==11 || protocolNumber==12
+                                makeColourPatch(allplotsHandles(kx,jx),gaborBackground);
+                                set(allplotsHandles(kx,jx),'Nextplot','add');
+                                makeColourPatch(allplotsHandles(kx,jx),gaborRing);
+                                set(allplotsHandles(kx,jx),'color',[0.5 0.5 0.5]);
+                                set(allplotsHandles(kx,jx),'box','on');
+                            else
+                                gabP = drawStimulus(allplotsHandles(kx,jx),gaborBackground,gaborRing,titleStringStim,protocolNumber);
+                            end
 
                             % show number of trials for this condition
                             if nShow
@@ -2889,12 +2962,25 @@ for k=1:numRows
                         % firing rate
                         
                         if strncmp(gridType,'Microelectrode',5)
-                            % Get the data
-                            clear signal spikeData
-                            load(fullfile(folderSpikes,['elec' num2str(spikeChannelNumber) '_SID' num2str(unitID) '.mat']));
+                            
+                            if ~poolElec
+                                % Get the data
+                                clear signal spikeData
+                                load(fullfile(folderSpikes,['elec' num2str(spikeChannelNumber) '_SID' num2str(unitID) '.mat']));
 
-                            disp(['Position: ' num2str(k) ', ' num2str(j) ', numStim: ' num2str(length(goodPos))]);
-                            [psthVals,xs] = getPSTH(spikeData(goodPos),10,[timeVals(1) timeVals(end)]);
+                                disp(['Position: ' num2str(k) ', ' num2str(j) ', numStim: ' num2str(length(goodPos))]);
+                                [psthVals,xs] = getPSTH(spikeData(goodPos),10,[timeVals(1) timeVals(end)]);
+                                
+                            else
+                                rfDataFile = [subjectName gridType 'RFData.mat']; % cutoff = 100
+                                load(rfDataFile);
+                                disp('Computing Pooled PSTH...');
+                                timebin=10;
+                                [~,psthValsElec,xs] = getMeanFiringRate(folderName,highRMSElectrodes,goodPos,timebin);
+                                
+                                psthVals = mean(psthValsElec,1);
+                                semPsth = std(psthValsElec,[],1)./sqrt(length(highRMSElectrodes));
+                            end
 
                             xsBase = (xs>=BLMin) & (xs<=BLMax);
                             xsStim = (xs>=STMin) & (xs<=STMax);
@@ -2908,14 +2994,29 @@ for k=1:numRows
                             firingRateBL(k,j) = mean(psthVals(xsBase));
                             
     %                         modFR(k,j) = (sum(psthVals(xsStim)) - sum(psthVals(xsBase)))/(sum(psthVals(xsStim)) + sum(psthVals(xsBase)));
-                            modFR(k,j) = (firingRateST(k,j) - firingRateBL(k,j)) / (firingRateST(k,j) + firingRateBL(k,j));
+                            if firingRateST(k,j)~=0 || firingRateST(k,j)~=0
+                                modFR(k,j) = (firingRateST(k,j) - firingRateBL(k,j)) / (firingRateST(k,j) + firingRateBL(k,j));
+                                if modFR(k,j) == 0
+                                    modFR(k,j) = 0.0001;
+                                end
+                            end
                         end
                         
                         if drawFR
 
                             kx = plotcount*(k-1) + drawStim + drawERP + 1;
 
-                            hFR = plot(allplotsHandles(kx,jx),xs,psthVals,'color',plotColor,'Linewidth',plotLineWidth);
+                            plot(allplotsHandles(kx,jx),xs,psthVals,'color',plotColor,'Linewidth',plotLineWidth);
+                            
+                            if poolElec && plotSEM
+                                thisPlotColor = get(plot(allplotsHandles(kx,jx),xs,psthVals,'color',plotColor,'Linewidth',plotLineWidth),'color');
+                                thisPlotColor(thisPlotColor==0) = 0.75;
+
+                                set(allplotsHandles(kx,jx),'Nextplot','add');
+                                plot(allplotsHandles(kx,jx),xs,(psthVals+semPsth),'color',thisPlotColor);
+                                plot(allplotsHandles(kx,jx),xs,(psthVals+semPsth),'color',thisPlotColor);
+                                plot(allplotsHandles(kx,jx),xs,psthVals,'color',plotColor,'Linewidth',plotLineWidth);
+                            end
 
                             set(allplotsHandles(kx,jx),'xlim',[tmin tmax]);
 
@@ -2937,7 +3038,19 @@ for k=1:numRows
                             takeLogTrial = 0;
                             mtmParams.trialave=0;
                             specType = 1;
-                            [~,~,dS,t2,f2] = getSpectrum(analogData(goodPos,:),timeVals,specType,mtmParams,movingWin,BLMin,BLMax,takeLogTrial);
+                            
+                            if ~poolElec
+                                [~,~,dS,t2,f2] = getSpectrum(analogData(goodPos,:),timeVals,specType,mtmParams,movingWin,BLMin,BLMax,takeLogTrial);
+                                
+                            else
+                                
+                                rfDataFile = [subjectName gridType 'RFData.mat']; % cutoff = 100
+                                load(rfDataFile);
+
+                                disp('*** Pooled TF Spectrum calculation...');
+                                [dS,t2,f2] = genTF(folderName,highRMSElectrodes,goodPos,BLMin,BLMax);
+
+                            end
 
                             kx = plotcount*(k-1) + drawStim + drawERP + drawFR + 1;
 
@@ -2966,6 +3079,8 @@ for k=1:numRows
                         
                         if drawTrends
 
+                            [dS,t2,f2] = genTF(folderName,highRMSElectrodes,goodPos,BLMin,BLMax);
+
                             freqRange = (f2 >= fBandLow) & (f2 <= fBandHigh);
 
                             dBandPower = sum(dS(:,freqRange),2);
@@ -2988,7 +3103,7 @@ for k=1:numRows
                         end
 
 
-                        if drawStim && drawTF
+                        if drawStim && drawTF && protocolNumber ~= 11 && protocolNumber ~= 12
                             % Set the colormaps
                             % stimulus figures - grayscale
                             % TF spectrum figures - default
@@ -3169,7 +3284,7 @@ if analysisType == 8
             % show number of trials for this condition
 %             text(0.1,0.1,['n = ' num2str(length(goodPos))],'unit','normalized','fontsize',7,'Parent',allplotsHandles(plotcount*(k-1)+1,j));
             
-            if protocolNumber == 10 % AFP
+            if protocolNumber == 10 || protocolNumber == 12 % AFP
                 jAFP = jAFP + 1;
                 jx = jAFP;
             else
@@ -3545,6 +3660,29 @@ elseif strncmp(protocolName,'CRS',3)
                    % still a relevant parameter and has to be taken care of
                    pos3 = parameterCombinations{aLen(3),eLen(3),sLen(3),fLen(3),oLen(3),cLen(3),tLen(3),pLen(3),r(3),3}; % for C - only rad
 
+               case 11 % Colour Dual Protocol
+                   pos1 = parameterCombinations{aLen(1),eLen(1),sLen(1),fLen(1),oLen(1),cLen(1),tLen(1),pLen(1),rLen(1),1}; % for C
+                   % [Vinay] - S is hidden in this case and only C & R
+                   % define the stimuli. pos1 is therefore the full set
+                   % here
+                   pos2 = parameterCombinations{aLen(2),eLen(2),sLen(2),f(2),o(2),c(2),tLen(2),pLen(2),r(2),2}; % for R - only rad & ori
+                   % [Vinay] -  R params - ori, sf, cont & rad. Rest are matched to
+                   % C's params
+                   pos3 = parameterCombinations{a(3),e(3),s(3),f(3),o(3),c(3),t(3),p(3),r(3),3};
+                   % for C. C is the defining gabor here
+
+               case 12 % Colour Ring Protocol
+                   pos1 = parameterCombinations{a(1),e(1),s(1),f(1),o(1),c(1),t(1),p(1),r(1),1};
+                   % S params define C & S
+
+                   pos2 = parameterCombinations{aLen(2),eLen(2),sLen(2),f(2),o(2),c(2),tLen(2),pLen(2),r(2),2}; % for R - only rad & cont
+                   % [Vinay] -  C is matched to S and therefore the entries
+                   % for gabor3 i.e. can be ignored. Otherwise this can 
+                   % give spurious results if the param values for C are 
+                   % not set equal to those for S. However, the rad of C is
+                   % still a relevant parameter and has to be taken care of
+                   pos3 = parameterCombinations{aLen(3),eLen(3),sLen(3),fLen(3),oLen(3),cLen(3),tLen(3),pLen(3),r(3),3}; % for C - only rad
+
         otherwise
             pos1 = parameterCombinations{a(1),e(1),s(1),f(1),o(1),c(1),t(1),p(1),r(1),1};
             % good positions for gabor 1 i.e. S
@@ -3738,15 +3876,21 @@ else
                     end
                     
                     if analysisType == 10 % show spikes
-                        clear meanSpikeWaveform
+                        clear segmentData meanSpikeWaveform
                         if ~isempty(spikeChannelNumber)
                             load(fullfile(folderSegment,'Segments',['elec' num2str(spikeChannelNumber) '.mat']));
-                            plot(plotHandles(k,j),segmentData,'color',plotColor);
+%                             plot(plotHandles(k,j),segmentData,'color',plotColor);
                             meanSpikeWaveform = mean(segmentData,2);
+                            snr = getSNR(segmentData);
                             set(plotHandles(k,j),'Nextplot','add');
                             plot(plotHandles(k,j),meanSpikeWaveform,'color',[0.6 0.8 0.8],'Linewidth',plotLineWidth);
+                            text(0.1,0.8,num2str(snr),'color','r','unit','normalized','parent',plotHandles(k,j));
+                            text(0.8,0.8,num2str(spikeChannelNumber),'color','g','unit','normalized','parent',plotHandles(k,j));
                             set(plotHandles(k,j),'Nextplot','replace');
+                            drawnow;
+                            clear segmentData meanSpikeWaveform
                         end
+                        set(plotHandles,'color',[0 0 0]);
                     end
                     
                     
@@ -3806,7 +3950,7 @@ end
 %==========================================================================
 
 function CLim = newclim(BeginSlot,EndSlot,CDmin,CDmax,CmLength)
-    % http://matlab.izmiran.ru/help/techdoc/creating_plots/axes_p18.html
+% http://matlab.izmiran.ru/help/techdoc/creating_plots/axes_p18.html
 %    Convert slot number and range
 %    to percent of colormap
     PBeginSlot    = (BeginSlot - 1) / (CmLength - 1);
@@ -3860,7 +4004,7 @@ if ~exist('gaborRing','var')
 end
 
 if ~exist('protocolNumber','var')
-    protocolNumber = 11;
+    protocolNumber = 13;
 end
 
 % gridLims = [-3 -0.5 -2.5 0];
@@ -3890,7 +4034,7 @@ diffeVals = eVals(2)-eVals(1);
 aVals2 = aVals(1):diffaVals/factor:aVals(end);
 eVals2 = eVals(1):diffeVals/factor:eVals(end);
 
-if protocolNumber == 3 || protocolNumber == 4 || protocolNumber == 5 % dual protocols
+if protocolNumber == 3 || protocolNumber == 4 || protocolNumber == 5 || protocolNumber == 11 % dual protocols
     innerphase = gaborBackground.spatialPhaseDeg; % for DPP
 else
     innerphase = gaborRing.spatialPhaseDeg; % for PRP
@@ -3909,7 +4053,7 @@ title(h,titleString,'Fontsize',fontSizeMedium,'FontWeight','bold');
 set(h,'CLim',[-shiftclim -(shiftclim-1)]); % to pull down the values lower than the lower clim value for the TF spectrum plots - adjust the clim accordingly
 % colormap(h,'gray');
 
-plotRF = 1;
+plotRF = 0;
 if plotRF
     paramsStimulus(1) = (size(gabP,1)/2)+0.5;
     paramsStimulus(2) = (size(gabP,2)/2)+0.5;
@@ -4266,7 +4410,7 @@ rFactor = 10;
 
         switch protocolNumber
 
-            case {1, 2, 6, 7, 8, 10}
+            case {1, 2, 6, 7, 8, 10, 12}
                 % Protocols with a ring region: 
                 % gaborBackground => surround (gabor1)
                 % gaborRing => ring (gabor2) with radius = ringRad - centreRad
@@ -4279,7 +4423,7 @@ rFactor = 10;
                 gaborBackground.azimuthDeg = 0;
                 gaborBackground.elevationDeg = 0;
                 gaborBackground.sigmaDeg = sValsUnique{1}(s(1));
-                gaborBackground.spatialFreqCPD = fValsUnique{1}(f(1));
+                gaborBackground.spatialFreqCPD = fValsUnique{1}(sf(1));
                 gaborBackground.orientationDeg = oValsUnique{1}(o(1));
                 gaborBackground.contrastPC = cValsUnique{1}(c(1));
                 gaborBackground.temporalFreqHz = tValsUnique{1}(t(1));
@@ -4290,14 +4434,14 @@ rFactor = 10;
                 gaborRing.azimuthDeg = 0;
                 gaborRing.elevationDeg = 0;
                 gaborRing.sigmaDeg = sValsUnique{2}(s(2));
-                gaborRing.spatialFreqCPD = fValsUnique{2}(f(2));
+                gaborRing.spatialFreqCPD = fValsUnique{2}(sf(2));
                 gaborRing.orientationDeg = oValsUnique{2}(o(2));
                 gaborRing.contrastPC = cValsUnique{2}(c(2));
                 gaborRing.temporalFreqHz = tValsUnique{2}(t(2));
                 gaborRing.spatialPhaseDeg = pValsUnique{2}(p(2));
                 gaborRing.radiusDeg = [rValsUnique{3}(r(3))/rFactor rValsUnique{2}(r(2))/rFactor];
 
-            case {0, 3, 4, 5, 9}
+            case {0, 3, 4, 5, 9, 11}
                 % Protocols without ring region: 
                 % gaborBackground => ring (gabor2)
                 % gaborRing => centre (gabor3)
@@ -4522,7 +4666,12 @@ end
 
 function protocolNumber = getProtocolNumber(folderExtract)
 load (fullfile(folderExtract,'stimResults'));
-protocolNumber = stimResults.protocolNumber;
+if isfield(stimResults,'protocolNumber')
+    protocolNumber = stimResults.protocolNumber;
+else
+    protocolNumber = inputdlg('enter protocol number: ');
+    protocolNumber = str2double(cell2mat(protocolNumber));
+end
 end
 
 function gaborsDisplayed = getGaborsDisplayed(folderExtract)
@@ -5106,6 +5255,47 @@ end
                                    num2str(tList(1+(k-1)*3,j)) num2str(pList(1+(k-1)*3,j)) num2str(rList(1+(k-1)*3,j))];
                                tagPos2 = [num2str(aLen(2)) num2str(eLen(2)) num2str(sLen(2)) num2str(fLen(2))...
                                    num2str(oLen(2)) num2str(cList(2+(k-1)*3,j)) num2str(tLen(2)) num2str(pLen(2)) num2str(rList(2+(k-1)*3,j))];
+                               tagPos3 = [num2str(aLen(3)) num2str(eLen(3)) num2str(sLen(3)) num2str(fLen(3))...
+                                   num2str(oLen(3)) num2str(cLen(3)) num2str(tLen(3)) num2str(pLen(3)) num2str(rList(3+(k-1)*3,j))];
+
+                           case 11 % Colour Dual Protocol
+                               pos1 = parameterCombinations{aLen(1),eLen(1),sLen(1),fLen(1),oLen(1),cLen(1),tLen(1),pLen(1),rLen(1),1}; % for C
+                               % [Vinay] - S is hidden in this case and only C & R
+                               % define the stimuli. pos1 is therefore the full set
+                               % here
+                               pos2 = parameterCombinations{aLen(2),eLen(2),sLen(2),fList(2+(k-1)*3,j),oList(2+(k-1)*3,j),cList(2+(k-1)*3,j),tLen(2),pLen(2),rList(2+(k-1)*3,j),2}; % for R - only rad & ori
+                               % [Vinay] -  R params - ori, sf, cont & rad. Rest are matched to
+                               % C's params
+                               pos3 = parameterCombinations{aList(3+(k-1)*3,j),eList(3+(k-1)*3,j),sList(3+(k-1)*3,j),fList(3+(k-1)*3,j),oList(3+(k-1)*3,j),cList(3+(k-1)*3,j),tList(3+(k-1)*3,j),pList(3+(k-1)*3,j),rList(3+(k-1)*3,j),3};
+                               % for C. C is the defining gabor here
+                               
+                               tagPos1 = [num2str(aLen(1)) num2str(eLen(1)) num2str(sLen(1))...
+                                   num2str(fLen(1)) num2str(oLen(1)) num2str(cLen(1))...
+                                   num2str(tLen(1)) num2str(pLen(1)) num2str(rLen(1))];
+                               tagPos2 = [num2str(aLen(2)) num2str(eLen(2)) num2str(sLen(2)) num2str(fList(2+(k-1)*3,j))...
+                                   num2str(oList(2+(k-1)*3,j)) num2str(cList(2+(k-1)*3,j)) num2str(tLen(2)) num2str(pLen(2)) num2str(rList(2+(k-1)*3,j))];
+                               tagPos3 = [num2str(aList(3+(k-1)*3,j)) num2str(eList(3+(k-1)*3,j)) num2str(sList(3+(k-1)*3,j))...
+                                   num2str(fList(3+(k-1)*3,j)) num2str(oList(3+(k-1)*3,j)) num2str(cList(3+(k-1)*3,j))...
+                                   num2str(tList(3+(k-1)*3,j)) num2str(pList(3+(k-1)*3,j)) num2str(rList(3+(k-1)*3,j))];
+
+                           case 12 % Colour Ring Protocol
+                               pos1 = parameterCombinations{aList(1+(k-1)*3,j),eList(1+(k-1)*3,j),sList(1+(k-1)*3,j),fList(1+(k-1)*3,j),oList(1+(k-1)*3,j),cList(1+(k-1)*3,j),tList(1+(k-1)*3,j),pList(1+(k-1)*3,j),rList(1+(k-1)*3,j),1};
+                               % S params define C & S
+                               % S i.e. kGabor0 corresponds to row number 1,4,7,..
+                               % and so on. Hence it is 1+(k-1)*3
+                               pos2 = parameterCombinations{aLen(2),eLen(2),sLen(2),fList(2+(k-1)*3,j),oList(2+(k-1)*3,j),cList(2+(k-1)*3,j),tLen(2),pLen(2),rList(2+(k-1)*3,j),2}; % for R - only rad & cont
+                               % [Vinay] -  C is matched to S and therefore the entries
+                               % for gabor3 i.e. can be ignored. Otherwise this can 
+                               % give spurious results if the param values for C are 
+                               % not set equal to those for S. However, the rad of C is
+                               % still a relevant parameter and has to be taken care of
+                               pos3 = parameterCombinations{aLen(3),eLen(3),sLen(3),fLen(3),oLen(3),cLen(3),tLen(3),pLen(3),rList(3+(k-1)*3,j),3}; % for C - only rad
+                               
+                               tagPos1 = [num2str(aList(1+(k-1)*3,j)) num2str(eList(1+(k-1)*3,j)) num2str(sList(1+(k-1)*3,j))...
+                                   num2str(fList(1+(k-1)*3,j)) num2str(oList(1+(k-1)*3,j)) num2str(cList(1+(k-1)*3,j))...
+                                   num2str(tList(1+(k-1)*3,j)) num2str(pList(1+(k-1)*3,j)) num2str(rList(1+(k-1)*3,j))];
+                               tagPos2 = [num2str(aLen(2)) num2str(eLen(2)) num2str(sLen(2)) num2str(fList(2+(k-1)*3,j))...
+                                   num2str(oList(2+(k-1)*3,j)) num2str(cList(2+(k-1)*3,j)) num2str(tLen(2)) num2str(pLen(2)) num2str(rList(2+(k-1)*3,j))];
                                tagPos3 = [num2str(aLen(3)) num2str(eLen(3)) num2str(sLen(3)) num2str(fLen(3))...
                                    num2str(oLen(3)) num2str(cLen(3)) num2str(tLen(3)) num2str(pLen(3)) num2str(rList(3+(k-1)*3,j))];
 
@@ -6531,6 +6721,47 @@ end
                                    num2str(tList(1+(k-1)*3,j)) num2str(pList(1+(k-1)*3,j)) num2str(rList(1+(k-1)*3,j))];
                                tagPos2 = [num2str(aLen(2)) num2str(eLen(2)) num2str(sLen(2)) num2str(fLen(2))...
                                    num2str(oLen(2)) num2str(cList(2+(k-1)*3,j)) num2str(tLen(2)) num2str(pLen(2)) num2str(rList(2+(k-1)*3,j))];
+                               tagPos3 = [num2str(aLen(3)) num2str(eLen(3)) num2str(sLen(3)) num2str(fLen(3))...
+                                   num2str(oLen(3)) num2str(cLen(3)) num2str(tLen(3)) num2str(pLen(3)) num2str(rList(3+(k-1)*3,j))];
+                               
+                           case 11 % Colour Dual Protocol
+                               pos1 = parameterCombinations{aLen(1),eLen(1),sLen(1),fLen(1),oLen(1),cLen(1),tLen(1),pLen(1),rLen(1),1}; % for C
+                               % [Vinay] - S is hidden in this case and only C & R
+                               % define the stimuli. pos1 is therefore the full set
+                               % here
+                               pos2 = parameterCombinations{aLen(2),eLen(2),sLen(2),fList(2+(k-1)*3,j),oList(2+(k-1)*3,j),cList(2+(k-1)*3,j),tLen(2),pLen(2),rList(2+(k-1)*3,j),2}; % for R - only rad & ori
+                               % [Vinay] -  R params - ori, sf, cont & rad. Rest are matched to
+                               % C's params
+                               pos3 = parameterCombinations{aList(3+(k-1)*3,j),eList(3+(k-1)*3,j),sList(3+(k-1)*3,j),fList(3+(k-1)*3,j),oList(3+(k-1)*3,j),cList(3+(k-1)*3,j),tList(3+(k-1)*3,j),pList(3+(k-1)*3,j),rList(3+(k-1)*3,j),3};
+                               % for C. C is the defining gabor here
+                               
+                               tagPos1 = [num2str(aLen(1)) num2str(eLen(1)) num2str(sLen(1))...
+                                   num2str(fLen(1)) num2str(oLen(1)) num2str(cLen(1))...
+                                   num2str(tLen(1)) num2str(pLen(1)) num2str(rLen(1))];
+                               tagPos2 = [num2str(aLen(2)) num2str(eLen(2)) num2str(sLen(2)) num2str(fList(2+(k-1)*3,j))...
+                                   num2str(oList(2+(k-1)*3,j)) num2str(cList(2+(k-1)*3,j)) num2str(tLen(2)) num2str(pLen(2)) num2str(rList(2+(k-1)*3,j))];
+                               tagPos3 = [num2str(aList(3+(k-1)*3,j)) num2str(eList(3+(k-1)*3,j)) num2str(sList(3+(k-1)*3,j))...
+                                   num2str(fList(3+(k-1)*3,j)) num2str(oList(3+(k-1)*3,j)) num2str(cList(3+(k-1)*3,j))...
+                                   num2str(tList(3+(k-1)*3,j)) num2str(pList(3+(k-1)*3,j)) num2str(rList(3+(k-1)*3,j))];
+
+                           case 12 % Colour Ring Protocol
+                               pos1 = parameterCombinations{aList(1+(k-1)*3,j),eList(1+(k-1)*3,j),sList(1+(k-1)*3,j),fList(1+(k-1)*3,j),oList(1+(k-1)*3,j),cList(1+(k-1)*3,j),tList(1+(k-1)*3,j),pList(1+(k-1)*3,j),rList(1+(k-1)*3,j),1};
+                               % S params define C & S
+                               % S i.e. kGabor0 corresponds to row number 1,4,7,..
+                               % and so on. Hence it is 1+(k-1)*3
+                               pos2 = parameterCombinations{aLen(2),eLen(2),sLen(2),fList(2+(k-1)*3,j),oList(2+(k-1)*3,j),cList(2+(k-1)*3,j),tLen(2),pLen(2),rList(2+(k-1)*3,j),2}; % for R - only rad & cont
+                               % [Vinay] -  C is matched to S and therefore the entries
+                               % for gabor3 i.e. can be ignored. Otherwise this can 
+                               % give spurious results if the param values for C are 
+                               % not set equal to those for S. However, the rad of C is
+                               % still a relevant parameter and has to be taken care of
+                               pos3 = parameterCombinations{aLen(3),eLen(3),sLen(3),fLen(3),oLen(3),cLen(3),tLen(3),pLen(3),rList(3+(k-1)*3,j),3}; % for C - only rad
+                               
+                               tagPos1 = [num2str(aList(1+(k-1)*3,j)) num2str(eList(1+(k-1)*3,j)) num2str(sList(1+(k-1)*3,j))...
+                                   num2str(fList(1+(k-1)*3,j)) num2str(oList(1+(k-1)*3,j)) num2str(cList(1+(k-1)*3,j))...
+                                   num2str(tList(1+(k-1)*3,j)) num2str(pList(1+(k-1)*3,j)) num2str(rList(1+(k-1)*3,j))];
+                               tagPos2 = [num2str(aLen(2)) num2str(eLen(2)) num2str(sLen(2)) num2str(fList(2+(k-1)*3,j))...
+                                   num2str(oList(2+(k-1)*3,j)) num2str(cList(2+(k-1)*3,j)) num2str(tLen(2)) num2str(pLen(2)) num2str(rList(2+(k-1)*3,j))];
                                tagPos3 = [num2str(aLen(3)) num2str(eLen(3)) num2str(sLen(3)) num2str(fLen(3))...
                                    num2str(oLen(3)) num2str(cLen(3)) num2str(tLen(3)) num2str(pLen(3)) num2str(rList(3+(k-1)*3,j))];
 
@@ -8012,126 +8243,133 @@ end
 
 %--------------------------------------------------------------------------
 %====================Spectrum calculation==================================
-function [S1,mlogS1,dS1,t2,f2] = getSpectrum(data,timeVals,specType,mtmParams,movingWin,BLMin,BLMax,takeLogTrial)
+% function [S1,mlogS1,dS1,t2,f2] = getSpectrum(data,timeVals,specType,mtmParams,movingWin,BLMin,BLMax,takeLogTrial)
+% 
+% if ~exist ('takeLogTrial','var')
+%     takeLogTrial = 0;
+% end
+% 
+% if ~exist ('BLMin','var')
+%     BLMin = -0.5;
+% end
+% 
+% if ~exist ('BLMax','var')
+%     BLMax = 0;
+% end
+% 
+% if ~exist('mtmParams','var')
+%     mtmParams.Fs = 2000;
+%     mtmParams.tapers=[2 3]; % [1 1] case is simply stft with dpss window
+%     mtmParams.trialave=0;
+%     mtmParams.err=0;
+%     mtmParams.pad=-1;
+% end
+% 
+% if ~exist('movingWin','var')
+%     movingWin = [0.5 0.01];
+% end
+% 
+% if takeLogTrial
+%     
+%     if specType==3 % line spectrum i.e. normal stft
+%         
+%         mtmParams.trialave = 0; % don't average spectrum across trials
+%         [S1,f2]=mtspectrumc(data',mtmParams);
+%         
+%         logS1 = conv2Log(S1); % log power for each trial
+%         mlogS1 = mean(logS1,2); % mean of log power across trials
+%         
+%         dS1 = [];
+%         t2 = [];
+%         
+%     else
+%         
+%         mtmParams.trialave = 0; % don't average spectrum across trials
+%         [S1,t2,f2]=mtspecgramc(data',movingWin,mtmParams);
+% 
+%         logS1 = conv2Log(S1); % log power for each trial
+%         trialmlogS1 = mean(logS1,3); % mean of log power across trials
+% 
+%         t2 = t2 + timeVals(1); % shift the t values to the actual time
+%         tBL = (t2>=BLMin) & (t2<=BLMax); % baseline time indices
+%         trialmlogS1BL = trialmlogS1(tBL,:); % baseline trial mean log power
+% 
+%         mlogS1BL = mean(trialmlogS1BL,1); % mean baseline log power
+% 
+%         % difference spectrum calculation
+%         dS1 = 10*(trialmlogS1 - repmat(mlogS1BL,size(trialmlogS1,1),1));
+%         
+%         
+%         % mean log power across trials
+%         mlogS1 = trialmlogS1;
+%     end
+%     
+% else
+%     
+%     if specType==3 % line spectrum i.e. normal stft
+%         
+% %         mtmParams.trialave = 1; % average spectrum across trials
+%         [S1,f2]=mtspectrumc(data',mtmParams);
+%         
+%         if mtmParams.trialave == 0
+%             mS1 = mean(S1,2);
+%             mlogS1 = conv2Log(mS1);
+%         else
+%             mlogS1 = conv2Log(S1); % log power for each trial
+%         end
+%         
+%         dS1 = [];
+%         t2= [];
+%         
+%     else
+%         
+% %         mtmParams.trialave = 1; % average spectrum across trials
+%         [S1,t2,f2]=mtspecgramc(data',movingWin,mtmParams);
+%         
+%         t2 = t2 + timeVals(1); % shift the t values to the actual time
+% 
+%         tBL = (t2>=BLMin) & (t2<=BLMax); % baseline time indices
+%         
+%         if mtmParams.trialave == 0
+%             mS1 = mean(S1,3);
+%             S1BL = mS1(tBL,:); % part of spectrum corresponding to the baseline period
+%         else
+%             mS1 = S1;
+%             S1BL = S1(tBL,:); % part of spectrum corresponding to the baseline period
+%         end
+%         mlogS1BL = mean(conv2Log(S1BL),1); % mean log power across these time points at every frequency
+% 
+%         % difference spectrum calculation
+%         dS1 = 10*(conv2Log(mS1) - repmat(mlogS1BL,size(mS1,1),1)); % in dB
+%         
+%         % mean log power across trials
+%         mlogS1 = conv2Log(mS1);
+%     end
+%     
+% end
+% 
+% end
 
-if ~exist ('takeLogTrial','var')
-    takeLogTrial = 0;
-end
 
-if ~exist ('BLMin','var')
-    BLMin = -0.5;
-end
-
-if ~exist ('BLMax','var')
-    BLMax = 0;
-end
-
-if ~exist('mtmParams','var')
-    mtmParams.Fs = 2000;
-    mtmParams.tapers=[2 3]; % [1 1] case is simply stft with dpss window
-    mtmParams.trialave=0;
-    mtmParams.err=0;
-    mtmParams.pad=-1;
-end
-
-if ~exist('movingWin','var')
-    movingWin = [0.5 0.01];
-end
-
-if takeLogTrial
-    
-    if specType==3 % line spectrum i.e. normal stft
-        
-        mtmParams.trialave = 0; % don't average spectrum across trials
-        [S1,f2]=mtspectrumc(data',mtmParams);
-        
-        logS1 = conv2Log(S1); % log power for each trial
-        mlogS1 = mean(logS1,2); % mean of log power across trials
-        
-        dS1 = [];
-        t2 = [];
-        
-    else
-        
-        mtmParams.trialave = 0; % don't average spectrum across trials
-        [S1,t2,f2]=mtspecgramc(data',movingWin,mtmParams);
-
-        logS1 = conv2Log(S1); % log power for each trial
-        trialmlogS1 = mean(logS1,3); % mean of log power across trials
-
-        t2 = t2 + timeVals(1); % shift the t values to the actual time
-        tBL = (t2>=BLMin) & (t2<=BLMax); % baseline time indices
-        trialmlogS1BL = trialmlogS1(tBL,:); % baseline trial mean log power
-
-        mlogS1BL = mean(trialmlogS1BL,1); % mean baseline log power
-
-        % difference spectrum calculation
-        dS1 = 10*(trialmlogS1 - repmat(mlogS1BL,size(trialmlogS1,1),1));
-        
-        
-        % mean log power across trials
-        mlogS1 = trialmlogS1;
-    end
-    
-else
-    
-    if specType==3 % line spectrum i.e. normal stft
-        
-%         mtmParams.trialave = 1; % average spectrum across trials
-        [S1,f2]=mtspectrumc(data',mtmParams);
-        
-        if mtmParams.trialave == 0
-            mS1 = mean(S1,2);
-            mlogS1 = conv2Log(mS1);
-        else
-            mlogS1 = conv2Log(S1); % log power for each trial
-        end
-        
-        dS1 = [];
-        t2= [];
-        
-    else
-        
-%         mtmParams.trialave = 1; % average spectrum across trials
-        [S1,t2,f2]=mtspecgramc(data',movingWin,mtmParams);
-        
-        t2 = t2 + timeVals(1); % shift the t values to the actual time
-
-        tBL = (t2>=BLMin) & (t2<=BLMax); % baseline time indices
-        
-        if mtmParams.trialave == 0
-            mS1 = mean(S1,3);
-            S1BL = mS1(tBL,:); % part of spectrum corresponding to the baseline period
-        else
-            mS1 = S1;
-            S1BL = S1(tBL,:); % part of spectrum corresponding to the baseline period
-        end
-        mlogS1BL = mean(conv2Log(S1BL),1); % mean log power across these time points at every frequency
-
-        % difference spectrum calculation
-        dS1 = 10*(conv2Log(mS1) - repmat(mlogS1BL,size(mS1,1),1)); % in dB
-        
-        % mean log power across trials
-        mlogS1 = conv2Log(mS1);
-    end
-    
-end
-
-end
-
-
-function [dS,t2,f2,dSElec] = genTF(folderName,electrodesList,goodPos)
+function [dS,t2,f2,dSElec] = genTF(folderName,electrodesList,goodPos,BLMin,BLMax)
 
 folderSegment = fullfile(folderName,'segmentedData');
 folderLFP = fullfile(folderSegment,'LFP');
 
 load(fullfile(folderLFP,'lfpInfo.mat'));
 
+% initialize dSElec
+load(fullfile(folderLFP,['elec' num2str(electrodesList(1)) '.mat']));
+% [~,~,~,t2,f2] = getSpectrum(analogData(goodPos,:),timeVals,[],[],BLMin,BLMax);
+[~,~,~,t2,f2] = getSpectrum(analogData(goodPos,:),timeVals);
+dSElec = zeros(length(t2),length(f2),length(electrodesList));
+
 for i = 1:length(electrodesList)
     
     disp(['elec' num2str(electrodesList(i))]);
     clear analogData
     load(fullfile(folderLFP,['elec' num2str(electrodesList(i)) '.mat']));
+%     [~,~,dSElec(:,:,i),t2,f2] = getSpectrum(analogData(goodPos,:),timeVals,[],[],BLMin,BLMax);
     [~,~,dSElec(:,:,i),t2,f2] = getSpectrum(analogData(goodPos,:),timeVals);
     %[~,~,dSElec,t2,f2] = getSpectrum(analogData(goodPos,:),mtmParams,movingWin,takeLogTrial,BLMin,BLMax,timeVals,specType);
     

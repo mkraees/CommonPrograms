@@ -1,6 +1,4 @@
 % Display the grid level waveforms
-% Plus an option to click on any channel and show the corresponding
-% waveforms in a separate window
 % Vinay Shirhatti, 04 Feb 2015
 % *************************************************************************
 

@@ -140,7 +140,7 @@ dEOT = max(abs(diff(eotCodes(:)-eotCodesLL(:))));
 
 maxDiffCutoffMS = 5; % throw an error if the difference exceeds 5 ms
 if maxDiffMS > maxDiffCutoffMS || dEOT > 0
-    error('The digital codes do not match with the LL data...');
+%     error('The digital codes do not match with the LL data...');
 else
     disp(['Maximum difference between LL and LFP/EEG start times: ' num2str(maxDiffMS) ' ms']);
 end

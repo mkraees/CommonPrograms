@@ -30,7 +30,7 @@ for i = 1:length(channelNumbers)
     wrap = [];
     atomList = (1:numAtomsMP);
     mpSpectrum = [];
-    disp(['Reconstructing Energy from:' num2str(numAtomsMP) 'atoms, and'  num2str(length(goodPos)) 'trials']);
+    disp(['Reconstructing Energy from: ' num2str(numAtomsMP) ' atoms, and '  num2str(length(goodPos)) ' trials']);
     for m=1:length(goodPos)
         disp(['trial number:' num2str(m) '(actual trial -)' num2str(goodPos(m))]);
         rEnergy = reconstructEnergyFromAtomsMPP(gaborInfoGoodPos{m}.gaborData,L,wrap,atomList);

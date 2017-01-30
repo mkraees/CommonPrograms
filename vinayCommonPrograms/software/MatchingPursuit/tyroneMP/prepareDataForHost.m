@@ -70,7 +70,7 @@ for i=1:length(channelNumbers)
         importData(X,outputFolder,tag,range,Fs);
 
         Numb_points = L;
-        Max_iterations = 100; % [Vinay] - changed from 500 to 100
+        Max_iterations = 500; % [Vinay] - changed from 500 to 100
         disp(['Preparing for electrode/channel ' num2str(channelNumbers(i))]);
         channelFolder = fullfile(outputFolder,['elec' num2str(channelNumbers(i))]);
         prepareMPForOrchestra(channelFolder,tag,Numb_points,Max_iterations,channelFolder);
