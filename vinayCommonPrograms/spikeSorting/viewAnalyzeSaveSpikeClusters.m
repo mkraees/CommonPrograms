@@ -10,7 +10,7 @@
 
 function viewAnalyzeSaveSpikeClusters(folderSourceString)
 
-poolobj = parpool('local');
+% poolobj = parpool('local');
 %**************************************************************************
 % Defaults
 %**************************************************************************
@@ -521,6 +521,8 @@ function saveClusters_Callback(~,~)
     
     elecSegments = load(fullfile(folderSegment,'Segments',['elec' num2str(selectedElec) '.mat']));
     
+    clear unitID unitIDSorted outlierID
+    
     outlierID = 256*ones(1,length(clusters)); % initialize the outlier IDs as 256 i.e. not belonging to any cluster
     if ~isempty(ignoreClusters)
         for j=1:length(ignoreClusters)
@@ -615,7 +617,7 @@ function saveClusters_Callback(~,~)
     numUnits = length(allUnitIDs);
 
     newSegmentChannels = repmat(selectedElec,1,numUnits);
-    segmentChannelsStored = cat(1,segmentChannelsStored,newSegmentChannels);
+    segmentChannelsStored = cat(2,segmentChannelsStored,newSegmentChannels);
 
     for a=1:numUnits
         u = allUnitIDs(a);
@@ -653,10 +655,15 @@ end
 
 function plotSavedSegments_Callback(~,~)
     segmentsType = get(hSegmentsType,'val');
+    folderName = fullfile(folderSourceString,'data',subjectName,gridType,expDate,protocolName);
+    folderSegment = fullfile(folderName,'segmentedData');
+    folderSpikeSegment = fullfile(folderSegment,'Segments');
     if segmentsType==1
         hSpikeSegments = displaySpikeSegments(subjectName,expDate,protocolName,folderSourceString,gridType,selectedElec,'sortedspikes');
+        hISISpkTrn = displayISIandSpikeTrain(folderSpikeSegment,selectedElec,'sortedspikes');
     elseif segmentsType==2
         hSpikeSegments = displaySpikeSegments(subjectName,expDate,protocolName,folderSourceString,gridType,selectedElec);
+        hISISpkTrn = displayISIandSpikeTrain(folderSpikeSegment);
     end
     
 end
@@ -668,9 +675,9 @@ function cla_Callback(~,~)
     claGivenPlotHandle(hClustersPlot);
 
     function claGivenPlotHandle(plotHandles)
-        [numRows,numCols] = size(plotHandles);
-        for i=1:numRows
-            for j=1:numCols
+        [hnumRows,hnumCols] = size(plotHandles);
+        for i=1:hnumRows
+            for j=1:hnumCols
                 cla(plotHandles(i,j));
             end
         end
@@ -785,9 +792,9 @@ if ~isempty(spikeChannelNumber)
         if strcmpi(distancemethod,'sqeuclidean')
             plot(hClustersPlot(1,1),centroids(ii,:),'color',colorList(ii,:),'Linewidth',2);
         elseif showOutliers || showWithoutOutliers
-            plot(hClustersPlot(1,1),mean(segmentData(:,clusterOutliersRemoved{ii}),2),'color',0.5.*colorList(ii,:),'Linewidth',2.5);
+            plot(hClustersPlot(1,1),mean(segmentData(:,clusterOutliersRemoved{ii}),2),'color',colorList(ii,:),'Linewidth',2.5);
         else
-            plot(hClustersPlot(1,1),mean(segmentData(:,clusters==ii),2),'color',0.5.*colorList(ii,:),'Linewidth',2.5);
+            plot(hClustersPlot(1,1),mean(segmentData(:,clusters==ii),2),'color',colorList(ii,:),'Linewidth',2.5);
         end
             
         set(hClustersPlot(1,1),'Nextplot','add'); set(hClustersPlot(1,1),'ylim',[-70 70]);

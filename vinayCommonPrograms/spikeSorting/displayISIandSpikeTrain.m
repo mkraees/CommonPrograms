@@ -93,7 +93,9 @@ elseif exist(elecsortedSegments,'file') % read saved spike unit data
     elecSegments = load(elecsortedSegments);
     timeStamp = elecSegments.timeStamp;
     unitID = elecSegments.unitID;
-    unitIDSorted = elecSegments.unitIDSorted;
+    if isfield(elecSegments,'unitIDSorted')
+        unitIDSorted = elecSegments.unitIDSorted;
+    end
 end
 
 %&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
