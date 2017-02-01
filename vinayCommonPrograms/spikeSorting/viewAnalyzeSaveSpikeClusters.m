@@ -45,7 +45,7 @@ end
 
 gridType = 'Microelectrode';
 % default initialization
-subjectNames = {'alpa','kesari'};
+subjectNames = {'alpa','kesari','tutu'};
 subjectName = subjectNames{1};
 [expDates,protocolNames] = eval(['allProtocols' upper(subjectName(1)) subjectName(2:end) gridType]);
 expDate = expDates{1}; protocolName = protocolNames{1}; pindices = [];
@@ -280,7 +280,7 @@ function subjectName_Callback(~,~)
 
     if strcmpi(subjectName,'alpa')
         [expDates,protocolNames] = allProtocolsAlpaMicroelectrode;
-    elseif strcmpi(subjectName,'kesari')
+    elseif strcmpi(subjectName,'kesari') || strcmpi(subjectName,'tutu')
     %     [expDates,protocolNames,stimType] = allProtocolsKesariMicroelectrode;
         [expDates,protocolNames] = getAllProtocols(subjectName,gridType);
     else
@@ -302,9 +302,13 @@ function subjectName_Callback(~,~)
         'Position',[0.05+(textWidth+xgap) 1-2*(textHeight+ygap) 2*textWidth textHeight],...
         'Style','popup','String',protocolList,'FontSize',fontSizeSmall,'Callback',{@protocolName_Callback});
     
+    [~,~,electrodeArray] = electrodePositionOnGrid(1,gridType,subjectName);
+    % patchColor = 'w';
+    [numRows,numCols] = size(electrodeArray);
+    
     clear elecSelHandle
     elecSelHandle = cell(numRows,numCols);
-    numRows = 10; numCols = 10;
+%     numRows = 10; numCols = 10;
 
     axes(gridPlotHandle);
     cla;
@@ -330,10 +334,10 @@ function subjectName_Callback(~,~)
     if exist(rfDataFile,'file')
         highRMSElectrodes = loadRFData(rfDataFile);
         electrodeList = highRMSElectrodes;
+    else
+        highRMSElectrodes = [];
     end
 
-    [~,~,electrodeArray] = electrodePositionOnGrid(1,gridType,subjectName);
-    % patchColor = 'w';
 
     for i=1:numRows
         textY = (numRows-i)*dY + dY/2;
