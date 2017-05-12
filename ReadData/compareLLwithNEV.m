@@ -6,7 +6,7 @@
 function matchingParameters=compareLLwithNEV(folderExtract,activeSide,showResults,convertToImageFlag)
 
 load(fullfile(folderExtract,'LL.mat'));
-load(fullfile(folderExtract,'StimResults.mat'));
+load(fullfile(folderExtract,'stimResults.mat'));
 load(fullfile(folderExtract,'digitalEvents.mat'));
 
 % Compare basic properties

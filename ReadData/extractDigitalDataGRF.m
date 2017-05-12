@@ -57,6 +57,10 @@ temporalFrequency= [digitalCodeInfo(find(convertStrCodeToDec('TF')==allDigitalCo
 radius           = [digitalCodeInfo(find(convertStrCodeToDec('RA')==allDigitalCodesInDec)).value];
 sigma            = [digitalCodeInfo(find(convertStrCodeToDec('SI')==allDigitalCodesInDec)).value];
 spatialFrequency = [digitalCodeInfo(find(convertStrCodeToDec('SF')==allDigitalCodesInDec)).value];
+% [vinay] In case of the image protocols, image numbers are mapped to sf and values >82 get converted to negative values in 'saveDigitalData'. 
+% Using the reverse operation to convert them back to valid positive image
+% numbers. Other protocols are unaffected.
+spatialFrequency(spatialFrequency<0) = (spatialFrequency(spatialFrequency<0)*2 + 32768)/2; 
 orientation      = [digitalCodeInfo(find(convertStrCodeToDec('OR')==allDigitalCodesInDec)).value];
 
 % Get timing

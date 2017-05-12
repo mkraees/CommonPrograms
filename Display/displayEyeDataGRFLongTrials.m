@@ -575,7 +575,7 @@ for i=1:length(expDates)
     elseif strcmp(protocolType,'ORI')
         
         for j=1:numberOfCategories
-            eyeIndices = inverseMap(intersect(parameterCombinations{a,e,s,f,o,j,t},allUsefulStims));
+            eyeIndices = inverseMap(intersect(parameterCombinations{a,e,s,f,j,c,t},allUsefulStims));
             eyeX{j} = cat(1,eyeX{j},eyeDataDegX(eyeIndices,:));
             eyeY{j} = cat(1,eyeY{j},eyeDataDegY(eyeIndices,:));
             

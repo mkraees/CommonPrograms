@@ -346,7 +346,7 @@ if electrodeCount ~= 0
         clear neuralListIDs neuralChannelsStored
         if isempty(neuralChannelsToStore)
             disp('Neural electrode list not given, taking all available electrodes.');
-            neuralChannelsToStore = neuralChannelNums;
+            neuralChannelsToStore = unique(neuralChannelNums);% [vinay] - selecting the unique neural channels to avoid duplication in subsequent steps
         end
 
         disp(['Spikes from the specified ' num2str(length(neuralChannelsToStore)) ' electrodes will be stored.']);

@@ -4,16 +4,16 @@
 % x' = xcos(theta)-ysin(theta)
 % y' = xsin(theta)+ycos(theta)
 
-function [gaborPatch,aperature] = makeGaborStimulusWithPhase(gaborStim,aVals,eVals,showGabor,innerphase)
+function [gaborPatch,aperature] = makeGaborStimulusWithPhase(gaborStim,aVals,eVals,showGabor,innerphase,h)
 
-if ~exist('showGabor','var')        showGabor=0;            end
+if ~exist('showGabor','var'); showGabor=0; end
+if ~exist('innerphase','var'); innerphase=0; end
 
 azi = gaborStim.azimuthDeg;
 ele = gaborStim.elevationDeg;
 sf  = gaborStim.spatialFreqCPD;
 ori = gaborStim.orientationDeg;
 C   = gaborStim.contrastPC/2;
-innerphase = innerphase;
 
 if length(gaborStim.radiusDeg)==1    % Gabor
     radMax = gaborStim.radiusDeg;
@@ -66,4 +66,9 @@ if showGabor
     pcolor(aVals,eVals,gaborPatch); shading interp; colorbar
     hold on;
     plot(boundaryX,boundaryY,'r');
+end
+
+% [vinay] added to just draw the grating in a plot handle, 04 May 2017
+if exist('h','var')
+    pcolor(h,aVals,eVals,grating); shading interp; colormap(gray);
 end

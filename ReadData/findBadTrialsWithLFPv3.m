@@ -3,9 +3,9 @@
 % 2. maxLimit
 % If yes, that trial is marked as a bad trial
 
-function [allBadTrials,badTrials] = findBadTrialsWithLFPv2(monkeyName,expDate,protocolName,folderSourceString,gridType,checkTheseElectrodes,processAllElectrodes,threshold,maxLimit,minLimit,showElectrodes,saveDataFlag,checkPeriod,rejectTolerance)
+function [allBadTrials,badTrials] = findBadTrialsWithLFPv3(monkeyName,expDate,protocolName,folderSourceString,gridType,checkTheseElectrodes,processAllElectrodes,threshold,maxLimit,minLimit,showElectrodes,saveDataFlag,checkPeriod,rejectTolerance)
 
-if ~exist('checkTheseElectrodes','var');     checkTheseElectrodes = [33 12 80 63 44];   end
+if ~exist('checkTheseElectrodes','var');     checkTheseElectrodes = 1:96;   end
 if ~exist('processAllElectrodes','var');     processAllElectrodes = 0;                  end
 if ~exist('folderSourceString','var');       folderSourceString = 'G:';                 end
 if ~exist('threshold','var');                threshold = 6;                             end
@@ -73,8 +73,9 @@ for i=1:numElectrodes
     badTrials=intersect(badTrials,allBadTrials{j}); % in the previous case we took the union
 end
 
-disp(['total Trials: ' num2str(numTrials) ', bad trials: ' num2str(badTrials)]);
-
+%**************************************************************************
+% [vinay] SOME ADDITIONAL CRITERIA for detecting bad repeats and electrodes
+%--------------------------------------------------------------------------
 % [Vinay] - decide as per a tolerance for the percent of electrodes showing
 % a particular stimulus as bad
 if exist('rejectTolerance','var')
@@ -89,11 +90,55 @@ if exist('rejectTolerance','var')
         end
         trialPercent = trialCount/numElectrodes;
         if trialPercent>=rejectTolerance
-            badTrials = cat(1,badTrials,n);
+            badTrials = cat(2,badTrials,n);
         end
     end
 end
 %-----
+
+% [vinay] - statistically determine the repeats which are flagged as bad
+% across a significant number of electrodes and reject them. Similarly tag
+% those electrodes as bad which show a significantly higher number of
+% badTrials as compared to the mean statistics across electrodes.
+
+% look at the overall distribution of badTrials across electrodes
+% and reject the repeats which are flagged as bad for >= (mean+std*threshold) 
+% number of electrodes. (across trials)
+% Similarly tag those electrodes as bad which show number of badTrials 
+% >= (mean+std*threshold) (across electrodes)
+allBadTrialsMatrix = zeros(length(allBadTrials),numTrials);
+for i=1:length(allBadTrials)
+    allBadTrialsMatrix(i,allBadTrials{i}) = 1;
+end
+marginalStim = sum(allBadTrialsMatrix(checkTheseElectrodes,:),1); % for each stimulus - no. of electrodes showing this stimulus as bad
+marginalElectrodes = sum(allBadTrialsMatrix,2); % for each electrode - no. of stimuli flagged as bad
+
+if processAllElectrodes && strcmpi(gridType,'Microelectrode')
+    if strcmpi(monkeyName,'tutu')
+        electrodesForMarginals = 1:81;
+    else
+        electrodesForMarginals = 1:96;
+    end
+else
+    electrodesForMarginals = checkTheseElectrodes;
+end
+
+thresholdMarginal = threshold/2; % thresholdMarginal i.e. values> u+thresholdMarginal*sigma will be tagged as bad 
+badTrialsMarginalStats = [];
+badElecsMarginalStats = [];
+if mean(marginalStim)>0
+    badTrialsMarginalStats = find(marginalStim>=(mean(marginalStim)+std(marginalStim)*thresholdMarginal));
+end
+if mean(marginalElectrodes(electrodesForMarginals))>0
+    badElecsMarginalStats = find(marginalElectrodes(electrodesForMarginals)>=(mean(marginalElectrodes(electrodesForMarginals))+std(marginalElectrodes(electrodesForMarginals))*thresholdMarginal));
+end
+
+badTrials = unique(cat(2,badTrials,badTrialsMarginalStats));
+badElecs = badElecsMarginalStats;
+
+disp(['total Trials: ' num2str(numTrials) ', bad trials indices: ' num2str(badTrials)]);
+disp(['total Elecs: ' num2str(length(marginalElectrodes)) ', bad elecs indices: ' num2str(badElecs')]);
+%--------------------------------
 
 for i=1:numElectrodes
     j = checkTheseElectrodes(i);
@@ -106,7 +151,7 @@ end
 
 if saveDataFlag
     disp(['Saving ' num2str(length(badTrials)) ' bad trials']);
-    save(fullfile(folderSegment,'badTrials.mat'),'badTrials','checkTheseElectrodes','threshold','maxLimit','minLimit','checkPeriod','allBadTrials','nameElec','rejectTolerance');
+    save(fullfile(folderSegment,'badTrials.mat'),'badTrials','checkTheseElectrodes','threshold','maxLimit','minLimit','checkPeriod','allBadTrials','nameElec','rejectTolerance','badElecs','badTrialsMarginalStats','allBadTrialsMatrix');
 else
     disp('Bad trials will not be saved..');
 end
@@ -149,16 +194,18 @@ end
 %**************************************************************************
 % summary plot
 %--------------------------------------------------------------------------
-allBadTrialsMatrix = zeros(length(allBadTrials),numTrials);
-for i=1:length(allBadTrials)
-    allBadTrialsMatrix(i,allBadTrials{i}) = 1;
-end
+% allBadTrialsMatrix = zeros(length(allBadTrials),numTrials);
+% for i=1:length(allBadTrials)
+%     allBadTrialsMatrix(i,allBadTrials{i}) = 1;
+% end
 
 summaryFig = figure('name',[monkeyName expDate protocolName],'numbertitle','off');
 h0 = subplot('position',[0.8 0.8 0.18 0.18]); set(h0,'visible','off');
-text(0.05, 0.7, ['thresholds (uV): [' num2str(minLimit) ' ' num2str(maxLimit) ']'],'fontsize',12,'unit','normalized','parent',h0);
-text(0.05, 0.4, ['checkPeriod (s): [' num2str(checkPeriod(1)) ' ' num2str(checkPeriod(2)) ']'],'fontsize',12,'unit','normalized','parent',h0);
-text(0.05, 0.1, ['rejectTolerance : ' num2str(rejectTolerance)],'fontsize',12,'unit','normalized','parent',h0);
+text(0.05, 0.7, ['thresholds (uV): [' num2str(minLimit) ' ' num2str(maxLimit) ']'],'fontsize',11,'unit','normalized','parent',h0);
+text(0.05, 0.55, ['checkPeriod (s): [' num2str(checkPeriod(1)) ' ' num2str(checkPeriod(2)) ']'],'fontsize',11,'unit','normalized','parent',h0);
+text(0.05, 0.4, ['rejectTolerance : ' num2str(rejectTolerance)],'fontsize',11,'unit','normalized','parent',h0);
+text(0.05, 0.25, ['threshold (*sig) : ' num2str(threshold)],'fontsize',11,'unit','normalized','parent',h0);
+text(0.05, 0.1, ['thresholdMarginal : ' num2str(thresholdMarginal)],'fontsize',11,'unit','normalized','parent',h0);
 
 h1 = getPlotHandles(1,1,[0.07 0.07 0.7 0.7]);
 subplot(h1);
@@ -175,15 +222,18 @@ ylabel('#count');
 if ~isempty(badTrials)
     stem(h2,badTrials,sum(allBadTrialsMatrix(:,badTrials),1),'color','r');
 end
-subplot(h3);
+subplot(h3); cla; set(h3,'nextplot','add');
 stem(h3,1:length(allBadTrials),sum(allBadTrialsMatrix,2)); axis('tight'); ylabel('#count');
+if ~isempty(badElecs)
+    stem(h3,badElecs,sum(allBadTrialsMatrix(badElecs,:),2),'color','r');
+end
 view([90 -90]);
 
 saveas(summaryFig,fullfile(folderSegment,[monkeyName expDate protocolName 'summmaryBadTrials.fig']),'fig');
 saveas(summaryFig,[monkeyName expDate protocolName 'summmaryBadTrials.fig'],'fig');
 
 %**************************************************************************
-% fill the badTrials summary sheet
+% fill the badTrials summary sheet #TODO
 %**************************************************************************
 
 
