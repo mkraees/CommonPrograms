@@ -179,9 +179,10 @@ subplot(h3);
 stem(h3,1:length(allBadTrials),sum(allBadTrialsMatrix,2)); axis('tight'); ylabel('#count');
 view([90 -90]);
 
-saveas(summaryFig,fullfile(folderSegment,[monkeyName expDate protocolName 'summmaryBadTrials.fig']),'fig');
-saveas(summaryFig,[monkeyName expDate protocolName 'summmaryBadTrials.fig'],'fig');
-
+if saveDataFlag
+    saveas(summaryFig,fullfile(folderSegment,[monkeyName expDate protocolName 'summmaryBadTrials.fig']),'fig');
+    saveas(summaryFig,[monkeyName expDate protocolName 'summmaryBadTrials.fig'],'fig');
+end
 %**************************************************************************
 % fill the badTrials summary sheet
 %**************************************************************************

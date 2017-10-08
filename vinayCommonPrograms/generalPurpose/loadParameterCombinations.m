@@ -5,8 +5,10 @@
 
 
 function [parameterCombinations,aValsUnique,eValsUnique,sValsUnique,...
-    fValsUnique,oValsUnique,cValsUnique,tValsUnique, rValsUnique, pValsUnique] = loadParameterCombinations(folderExtract)
+    fValsUnique,oValsUnique,cValsUnique,tValsUnique, pValsUnique, rValsUnique] = loadParameterCombinations(folderExtract)
 % [Vinay] - added rValsUnique and pValsUnique for radius and spatial phase
+% [Vinay] - swapped the order for pValsUnique and rValsUnique in the o/p
+% arg, 26 June 2017
 load(fullfile(folderExtract,'parameterCombinations.mat'));
 
 if ~exist('rValsUnique','var')

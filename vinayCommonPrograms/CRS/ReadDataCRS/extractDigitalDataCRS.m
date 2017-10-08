@@ -25,21 +25,22 @@
 % to reconstruct the stimulus parameter values from the sent non-redundant
 % Digital Codes)
 
-function [goodStimNums,goodStimTimes,side] = extractDigitalDataCRS(folderExtract,ignoreTargetStimFlag,frameRate)
+function [goodStimNums,goodStimTimes,side] = extractDigitalDataCRS(folderExtract,ignoreTargetStimFlag,frameRate,lagGaborsProtocol)
 
 if ~exist('ignoreTargetStimFlag','var');   ignoreTargetStimFlag=0;      end
 if ~exist('frameRate','var');              frameRate=100;               end
+if ~exist('lagGaborsProtocol','var');      lagGaborsProtocol=0;               end
 
 hideSomeDigitalCode=1; % Vinay - set this to 1 if you have sent partial code based on the protocol
 
-stimResults = readDigitalCodesCRS(folderExtract,frameRate,hideSomeDigitalCode); % writes stimResults and trialResults
+stimResults = readDigitalCodesCRS(folderExtract,frameRate,hideSomeDigitalCode,lagGaborsProtocol); % writes stimResults and trialResults
 side = stimResults.side;
 [goodStimNums,goodStimTimes] = getGoodStimNumsCRS(folderExtract,ignoreTargetStimFlag); % Good stimuli
 save(fullfile(folderExtract,'goodStimNums.mat'),'goodStimNums');
 end
 
 % GRF Specific protocols
-function [stimResults,trialResults,trialEvents] = readDigitalCodesCRS(folderOut,frameRate,hideSomeDigitalCode)
+function [stimResults,trialResults,trialEvents] = readDigitalCodesCRS(folderOut,frameRate,hideSomeDigitalCode,lagGaborsProtocol)
 
 if ~exist('frameRate','var');              frameRate=100;               end
 kForceQuit=7;
@@ -99,6 +100,62 @@ numTrials = length(trialStartTimes);
 
 % [Vinay] - Read the protocolNumber
 stimResults.protocolNumber = convertUnits([digitalCodeInfo(find(convertStrCodeToDec('PN')==allDigitalCodesInDec)).value]);
+
+% [Vinay] 260917 - Read the lag value in milliseconds (lag between S and R&C, when used)
+try
+    stimResults.lagGaborsMS = convertUnits([digitalCodeInfo(find(convertStrCodeToDec('LG')==allDigitalCodesInDec)).value]);
+catch
+    stimResults.lagGaborsMS = 0;
+end
+
+% [Vinay] 270917 Temporary fix to extract parameter values for Annulus
+% fixed protocols with lagging gabors
+% Adjust the read values of the parameters if lag is used in the protocol
+% If lag is used then there might be cases where the fixation was broken
+% before the gabors with the lag were drawn. In such a case the contrast
+% and radii for the undrawn gabors are not sent and recorded. We need to
+% fill those values with some dummy values (-1 used here)
+if stimResults.protocolNumber==10 && stimResults.lagGaborsMS~=0 && lagGaborsProtocol
+    
+    dummyVal = -1;
+    
+    conS = setdiff(unique(contrast),0);
+    j=1;
+    for i=1:length(contrast)-1
+        if ismember(contrast(i),conS) && ismember(contrast(i+1),conS)
+            conAlt(j) = contrast(i); conAlt(j+1) = dummyVal;
+            j=j+2;
+        else
+            conAlt(j) = contrast(i);
+            j=j+1;
+        end
+    end
+    if ismember(contrast(end),conS)
+        conAlt(j) = contrast(end);
+        conAlt(j+1) = dummyVal;
+    else
+        conAlt(j) = contrast(end);
+    end
+    
+    radS = radius(1);
+    j=1;
+    for i=1:length(radius)-1
+        if radius(i)==radS && radius(i+1)==radS
+            radAlt(j) = radius(i); radAlt(j+1) = dummyVal; radAlt(j+2) = dummyVal;
+            j=j+3;
+        else
+            radAlt(j) = radius(i);
+            j=j+1;
+        end
+    end
+    if radius(end)==radS
+        radAlt(j) = radius(end); radAlt(j+1) = dummyVal; radAlt(j+2) = dummyVal;
+    else
+        radAlt(j) = radius(end);
+    end
+    % assign the new values
+    contrast = conAlt'; radius = radAlt;
+end
 
 %----
 % Adjust the stimResults.parameter based on the protocolNumber if partial

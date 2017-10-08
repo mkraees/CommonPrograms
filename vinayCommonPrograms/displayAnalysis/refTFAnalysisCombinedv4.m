@@ -4,6 +4,10 @@
 %
 % modified from refTFAnalysisGeneric in GammaStimDicontinuityProject
 % 27 March 2015
+%
+% swapped the order for pValsUnique and rValsUnique in the o/p arg list of
+% loadParameterCombinations
+% 26 June 2017
 %==========================================================================
 
 
@@ -33,7 +37,7 @@ if ~exist('loadProtocolNumber','var')  loadProtocolNumber = 13;         end % Vi
 [neuralChannelsStored,SourceUnitIDs] = loadspikeInfo(folderSpikes);
 
 % Get Combinations
-[~,aValsUnique,eValsUnique,sValsUnique,fValsUnique,oValsUnique,cValsUnique,tValsUnique,rValsUnique,pValsUnique] = loadParameterCombinations(folderExtract);
+[~,aValsUnique,eValsUnique,sValsUnique,fValsUnique,oValsUnique,cValsUnique,tValsUnique,pValsUnique,rValsUnique] = loadParameterCombinations(folderExtract);
 
 % Get properties of the Stimulus
 % stimResults = loadStimResults(folderExtract);
@@ -2066,7 +2070,7 @@ timeForComputation = [40 100]/1000; % ms
 freqForComputation = [30 80]; % Hz
 
 [parameterCombinations,aValsUnique,eValsUnique,sValsUnique,...
-    fValsUnique,oValsUnique,cValsUnique,tValsUnique,rValsUnique,pValsUnique] = loadParameterCombinations(folderExtract);
+    fValsUnique,oValsUnique,cValsUnique,tValsUnique,pValsUnique,rValsUnique] = loadParameterCombinations(folderExtract);
 
 numRows = size(plotHandles,1);
 numCols = size(plotHandles,2);
@@ -3439,7 +3443,7 @@ folderSegment = fullfile(folderName,'segmentedData');
 titleFontSize = 10;
 
 [parameterCombinations,aValsUnique,eValsUnique,sValsUnique,...
-    fValsUnique,oValsUnique,cValsUnique,tValsUnique,rValsUnique,pValsUnique] = loadParameterCombinations(folderExtract);
+    fValsUnique,oValsUnique,cValsUnique,tValsUnique,pValsUnique,rValsUnique] = loadParameterCombinations(folderExtract);
 
 numRows = size(plotHandles,1);
 numCols = size(plotHandles,2);
@@ -3713,238 +3717,240 @@ else
     
     for ne = 1:numElecs
             
-            % Read analog channel/electrode 1
-            analogChannelString = analogChannelStringArray{ne};
-            
-            [k,j] = electrodePositionOnGrid(analogChannelsStored(ne),gridType,subjectName);
+        % Read analog channel/electrode 1
+        analogChannelString = analogChannelStringArray{ne};
 
-            spikeChannelNumber = [];
-            unitID = [];
-            if analysisType == 5 || analysisType == 6 || analysisType==7 || analysisType==8 || analysisType == 10 % Spike related
+        [k,j] = electrodePositionOnGrid(analogChannelsStored(ne),gridType,subjectName);
 
-                if strncmp(gridType,'Microelectrode',5)
-                    spikeChannelNumber = neuralChannelsStored(ne);
-                    unitID = SourceUnitIDs(ne);
+        spikeChannelNumber = [];
+        unitID = [];
+        if analysisType == 5 || analysisType == 6 || analysisType==7 || analysisType==8 || analysisType == 10 % Spike related
+
+            if ne>96; break; end;
+            if strncmp(gridType,'Microelectrode',5)
+                spikeChannelNumber = neuralChannelsStored(ne);
+                unitID = SourceUnitIDs(ne);
+            end
+
+        end
+
+        %------------------
+        % Vinay - select good trials as per the electrode(s)
+        if useAllBadTrials && existsBadTrialFile
+            elecIndex1 = ne;
+
+            elecBadTrials = allBadTrials{elecIndex1};
+            disp(['No. of Bad trials for ' analogChannelString ': ' num2str(length(elecBadTrials))]);
+
+            goodPos = setdiff(goodPos,elecBadTrials);
+        else
+            goodPos = setdiff(goodPos,badTrials);
+
+        end
+        %-------------------
+
+        % Get the data
+        clear signal analogData analogDataNotched
+        load(fullfile(folderLFP,analogChannelString));
+        disp([analogChannelString 'pos: ' num2str(k) ',' num2str(j) ',n=' num2str(length(goodPos))]);
+
+        % Vinay - added this notch data check
+        if notchData
+            analogData = analogDataNotched;
+        end
+
+
+        if analysisType == 1 || analysisType == 9       % compute ERP
+
+            if analysisType == 9
+                plot(plotHandles(k,j),timeVals,analogData(goodPos,:));
+            end
+            set(plotHandles(k,j),'Nextplot','add');
+
+            clear erp
+            erp = mean(analogData(goodPos,:),1);
+
+            plot(plotHandles(k,j),timeVals,erp,'color',plotColor,'Linewidth',plotLineWidth);
+
+            % Vinay - plotting SEM
+            if plotSEM
+                thisPlotColor = get(plot(plotHandles(k,j),timeVals,erp,'color',plotColor),'Color');
+                thisPlotColor(thisPlotColor==0) = 0.75;
+                erpSEM = std(analogData(goodPos,:),[],1)./sqrt(length(goodPos)); % Vinay - SEM = std/sqrt(n)
+
+                set(plotHandles(k,j),'Nextplot','add');
+                plot(plotHandles(k,j),timeVals,(erp+erpSEM),'color',thisPlotColor);
+                plot(plotHandles(k,j),timeVals,(erp-erpSEM),'color',thisPlotColor);
+                plot(plotHandles(k,j),timeVals,erp,'color',plotColor,'Linewidth',plotLineWidth);
+
+                if ~holdOnState
+                    set(plotHandles(k,j),'Nextplot','replace');
+                end 
+
+            end
+
+
+        else
+
+            if analysisType == 2
+
+                fftBL = abs(fft(analogData(goodPos,BLPos),[],2));
+                fftST = abs(fft(analogData(goodPos,STPos),[],2));
+
+                plot(plotHandles(k,j),xsBL,conv2Log(mean(fftBL)),'color',plotColor,'Linewidth',plotLineWidth,'LineStyle','--');
+                set(plotHandles(k,j),'Nextplot','add');
+                plot(plotHandles(k,j),xsST,conv2Log(mean(fftST)),'color',plotColor,'Linewidth',plotLineWidth);
+
+                if ~holdOnState
+                    set(plotHandles(k,j),'Nextplot','replace');
                 end
-
-            end
-            
-            %------------------
-            % Vinay - select good trials as per the electrode(s)
-            if useAllBadTrials && existsBadTrialFile
-                elecIndex1 = ne;
-
-                elecBadTrials = allBadTrials{elecIndex1};
-                disp(['No. of Bad trials for ' analogChannelString ': ' num2str(length(elecBadTrials))]);
-
-                goodPos = setdiff(goodPos,elecBadTrials);
-            else
-                goodPos = setdiff(goodPos,badTrials);
-
-            end
-            %-------------------
-
-            % Get the data
-            clear signal analogData analogDataNotched
-            load(fullfile(folderLFP,analogChannelString));
-            disp([analogChannelString 'pos: ' num2str(k) ',' num2str(j) ',n=' num2str(length(goodPos))]);
-
-            % Vinay - added this notch data check
-            if notchData
-                analogData = analogDataNotched;
             end
 
+            if analysisType == 3
 
-                if analysisType == 1 || analysisType == 9       % compute ERP
-                    
-                    if analysisType == 9
-                        plot(plotHandles(k,j),timeVals,analogData(goodPos,:));
-                    end
-                    set(plotHandles(k,j),'Nextplot','add');
-                    
-                    clear erp
-                    erp = mean(analogData(goodPos,:),1);
+                fftBL = abs(fft(analogData(goodPos,BLPos),[],2));
+                fftST = abs(fft(analogData(goodPos,STPos),[],2));
 
-                    plot(plotHandles(k,j),timeVals,erp,'color',plotColor,'Linewidth',plotLineWidth);
-
-                    % Vinay - plotting SEM
-                    if plotSEM
-                        thisPlotColor = get(plot(plotHandles(k,j),timeVals,erp,'color',plotColor),'Color');
-                        thisPlotColor(thisPlotColor==0) = 0.75;
-                        erpSEM = std(analogData(goodPos,:),[],1)./sqrt(length(goodPos)); % Vinay - SEM = std/sqrt(n)
-
-                        set(plotHandles(k,j),'Nextplot','add');
-                        plot(plotHandles(k,j),timeVals,(erp+erpSEM),'color',thisPlotColor);
-                        plot(plotHandles(k,j),timeVals,(erp-erpSEM),'color',thisPlotColor);
-                        plot(plotHandles(k,j),timeVals,erp,'color',plotColor,'Linewidth',plotLineWidth);
-
-                        if ~holdOnState
-                            set(plotHandles(k,j),'Nextplot','replace');
-                        end 
-
-                    end
-
-
+                if xsBL == xsST %#ok<BDSCI>
+                    plot(plotHandles(k,j),xsBL,conv2Log(mean(fftST))-conv2Log(mean(fftBL)),'color',plotColor,'Linewidth',plotLineWidth);
                 else
-
-                    if analysisType == 2
-                        
-                        fftBL = abs(fft(analogData(goodPos,BLPos),[],2));
-                        fftST = abs(fft(analogData(goodPos,STPos),[],2));
-                        
-                        plot(plotHandles(k,j),xsBL,conv2Log(mean(fftBL)),'color',plotColor,'Linewidth',plotLineWidth,'LineStyle','--');
-                        set(plotHandles(k,j),'Nextplot','add');
-                        plot(plotHandles(k,j),xsST,conv2Log(mean(fftST)),'color',plotColor,'Linewidth',plotLineWidth);
-
-                        if ~holdOnState
-                            set(plotHandles(k,j),'Nextplot','replace');
-                        end
-                    end
-
-                    if analysisType == 3
-                        
-                        fftBL = abs(fft(analogData(goodPos,BLPos),[],2));
-                        fftST = abs(fft(analogData(goodPos,STPos),[],2));
-                        
-                        if xsBL == xsST %#ok<BDSCI>
-                            plot(plotHandles(k,j),xsBL,conv2Log(mean(fftST))-conv2Log(mean(fftBL)),'color',plotColor,'Linewidth',plotLineWidth);
-                        else
-                            disp('Choose same baseline and stimulus periods..');
-                        end
-                    end
-                    
-                    if analysisType == 4
-                        takeLogTrial = 0;
-                        showMean = 1;
-                        mtmParams.trialave=0;
-                        specType = 1;
-                        [~,~,dS,t2,f2] = getSpectrum(analogData(goodPos,:),timeVals,specType,mtmParams,movingWin,BLMin,BLMax,takeLogTrial);
-                        
-                        freqRange = (f2 >= fBandLow) & (f2 <= fBandHigh);
-                        
-                        dBandPower = sum(dS(:,freqRange),2);
-                        
-                        meandBandPower = mean(dS(:,freqRange),2);
-                        semBandPower = std(dS(:,freqRange),[],2)./sqrt(size(dS,2));
-                        
-                        tST = (t2>=STMin) & (t2<=STMax); % stimulus time indices
-                        totalGamma(k,j) = sum(dBandPower(tST,:))./(fBandHigh-fBandLow);
-                        
-                        [peakTimeIndex peakFreqIndex] = find(dS==max(max(dS(tST,freqRange))));
-                        peakGammaFreq(k,j) = f2(peakFreqIndex);
-                        
-                        if ~showMean
-                            plot(plotHandles(k,j),t2,dBandPower,'color',plotColor,'Linewidth',plotLineWidth);
-                        else
-                            thisPlotColor = get(plot(plotHandles(k,j),t2,meandBandPower,'color',plotColor,'Linewidth',plotLineWidth),'Color');
-                            thisPlotColor(thisPlotColor==0) = 0.75;
-                            
-                            set(plotHandles(k,j),'Nextplot','add');
-                            plot(plotHandles(k,j),t2,(meandBandPower+semBandPower),'color',thisPlotColor);
-                            plot(plotHandles(k,j),t2,(meandBandPower-semBandPower),'color',thisPlotColor);
-                            plot(plotHandles(k,j),t2,meandBandPower,'color',plotColor,'Linewidth',plotLineWidth);
-                        end
-                        
-                    end
-                    
-                    
-                    
-                    if analysisType == 7 % STA
-                        % Get the spike data
-                        clear signal spikeData
-                        load(fullfile(folderSpikes,['elec' num2str(spikeChannelNumber) '_SID' num2str(unitID) '.mat']));
-
-                        staTimeLims{1} = [BLMin BLMax];
-                        staTimeLims{2} = [STMin STMax];
-
-                        staLen = [STAMin STAMax];
-
-                        goodSpikeData = spikeData(goodPos);
-                        goodAnalogSignal = analogData(goodPos,:);
-                        [staVals,numberOfSpikes,xsSTA] = getSTA(goodSpikeData,goodAnalogSignal,staTimeLims,timeVals,staLen,removeMeanSTA);
-
-                        disp([num2str(k) ' ' num2str(j) ', numStim: ' num2str(length(goodPos)) ', numSpikes: ' num2str(numberOfSpikes)]);
-                        if ~isempty(staVals{1})
-                            plot(plotHandles(k,j),xsSTA,staVals{1},'color','g');
-                        end
-                        set(plotHandles(k,j),'Nextplot','add');
-                        if ~isempty(staVals{2})
-                            plot(plotHandles(k,j),xsSTA,staVals{2},'color',plotColor,'Linewidth',plotLineWidth);
-                        end
-                        set(plotHandles(k,j),'Nextplot','replace');
-                                
-                    end
-                    
-                    if analysisType == 10 % show spikes
-                        clear segmentData meanSpikeWaveform
-                        if ~isempty(spikeChannelNumber)
-                            load(fullfile(folderSegment,'Segments',['elec' num2str(spikeChannelNumber) '.mat']));
-%                             plot(plotHandles(k,j),segmentData,'color',plotColor);
-                            meanSpikeWaveform = mean(segmentData,2);
-                            snr = getSNR(segmentData);
-                            set(plotHandles(k,j),'Nextplot','add');
-                            plot(plotHandles(k,j),meanSpikeWaveform,'color',[0.6 0.8 0.8],'Linewidth',plotLineWidth);
-                            text(0.1,0.8,num2str(snr),'color','r','unit','normalized','parent',plotHandles(k,j));
-                            text(0.8,0.8,num2str(spikeChannelNumber),'color','g','unit','normalized','parent',plotHandles(k,j));
-                            set(plotHandles(k,j),'Nextplot','replace');
-                            drawnow;
-                            clear segmentData meanSpikeWaveform
-                        end
-                        set(plotHandles,'color',[0 0 0]);
-                    end
-                    
-                    
-                    if analysisType == 5 || analysisType == 6
-                        
-                        % Get the data
-                        clear signal spikeData
-                        load(fullfile(folderSpikes,['elec' num2str(spikeChannelNumber) '_SID' num2str(unitID) '.mat']));
-                        
-                        disp(['Position: ' num2str(k) ', ' num2str(j) ', numStim: ' num2str(length(goodPos))]);
-                        if analysisType == 5
-                            [psthVals,xs] = getPSTH(spikeData(goodPos),10,[timeVals(1) timeVals(end)]);
-                            plot(plotHandles(k,j),xs,psthVals,'color',plotColor,'Linewidth',plotLineWidth);
-                        else
-                            X = spikeData(goodPos);
-                            axes(plotHandles(k,j)); %#ok<LAXES>
-                            rasterplot(X,1:length(X),plotColor);
-                        end
-                        
-                    end
-                    
-                    
-                    
-                    if analysisType == 8 % get all plots
-                        
-                        %--------------------------------------------------
-                        % tf spectrum
-                            
-                        colormap('default'); % revert the colormap to default, otherwise it stays grayscale after the stimulus is drawn
-                        takeLogTrial = 0;
-                        mtmParams.trialave=0;
-                        specType = 1;
-                        [~,~,dS,t2,f2] = getSpectrum(analogData(goodPos,:),timeVals,specType,mtmParams,movingWin,BLMin,BLMax,takeLogTrial);
-
-                        % plot the difference spectrum
-%                             dS = dS + max(gabP(:));
-                        pcolor(plotHandles(k,j),t2,f2,dS');
-                        caxis([cmin cmax]); shading(plotHandles(k,j),'interp');
-
-                        set(plotHandles(k,j),'xlim',[tmin tmax]);
-                        set(plotHandles(k,j),'ylim',[fftmin fftmax]);
-                        set(plotHandles(k,j),'clim',[cmin cmax]);
-
-                        
-                        disp('Plotting TF spectrum...');
-                        
-                    end
-
+                    disp('Choose same baseline and stimulus periods..');
                 end
-                
             end
-            
-            
+
+            if analysisType == 4
+                takeLogTrial = 0;
+                showMean = 1;
+                mtmParams.trialave=0;
+                specType = 1;
+                [~,~,dS,t2,f2] = getSpectrum(analogData(goodPos,:),timeVals,specType,mtmParams,movingWin,BLMin,BLMax,takeLogTrial);
+
+                freqRange = (f2 >= fBandLow) & (f2 <= fBandHigh);
+
+                dBandPower = sum(dS(:,freqRange),2);
+
+                meandBandPower = mean(dS(:,freqRange),2);
+                semBandPower = std(dS(:,freqRange),[],2)./sqrt(size(dS,2));
+
+                tST = (t2>=STMin) & (t2<=STMax); % stimulus time indices
+                totalGamma(k,j) = sum(dBandPower(tST,:))./(fBandHigh-fBandLow);
+
+                [peakTimeIndex peakFreqIndex] = find(dS==max(max(dS(tST,freqRange))));
+                peakGammaFreq(k,j) = f2(peakFreqIndex);
+
+                if ~showMean
+                    plot(plotHandles(k,j),t2,dBandPower,'color',plotColor,'Linewidth',plotLineWidth);
+                else
+                    thisPlotColor = get(plot(plotHandles(k,j),t2,meandBandPower,'color',plotColor,'Linewidth',plotLineWidth),'Color');
+                    thisPlotColor(thisPlotColor==0) = 0.75;
+
+                    set(plotHandles(k,j),'Nextplot','add');
+                    plot(plotHandles(k,j),t2,(meandBandPower+semBandPower),'color',thisPlotColor);
+                    plot(plotHandles(k,j),t2,(meandBandPower-semBandPower),'color',thisPlotColor);
+                    plot(plotHandles(k,j),t2,meandBandPower,'color',plotColor,'Linewidth',plotLineWidth);
+                end
+
+            end
+
+
+
+            if analysisType == 7 % STA
+                % Get the spike data
+                clear signal spikeData
+                load(fullfile(folderSpikes,['elec' num2str(spikeChannelNumber) '_SID' num2str(unitID) '.mat']));
+
+                staTimeLims{1} = [BLMin BLMax];
+                staTimeLims{2} = [STMin STMax];
+
+                staLen = [STAMin STAMax];
+
+                goodSpikeData = spikeData(goodPos);
+                goodAnalogSignal = analogData(goodPos,:);
+                [staVals,numberOfSpikes,xsSTA] = getSTA(goodSpikeData,goodAnalogSignal,staTimeLims,timeVals,staLen,removeMeanSTA);
+
+                disp([num2str(k) ' ' num2str(j) ', numStim: ' num2str(length(goodPos)) ', numSpikes: ' num2str(numberOfSpikes)]);
+                if ~isempty(staVals{1})
+                    plot(plotHandles(k,j),xsSTA,staVals{1},'color','g');
+                end
+                set(plotHandles(k,j),'Nextplot','add');
+                if ~isempty(staVals{2})
+                    plot(plotHandles(k,j),xsSTA,staVals{2},'color',plotColor,'Linewidth',plotLineWidth);
+                end
+                set(plotHandles(k,j),'Nextplot','replace');
+
+            end
+
+            if analysisType == 10 % show spikes
+                clear segmentData meanSpikeWaveform
+                if ~isempty(spikeChannelNumber)
+                    load(fullfile(folderSegment,'Segments',['elec' num2str(spikeChannelNumber) '.mat']));
+%                             plot(plotHandles(k,j),segmentData,'color',plotColor);
+                    meanSpikeWaveform = mean(segmentData,2);
+                    snr = getSNR(segmentData);
+                    set(plotHandles(k,j),'Nextplot','add');
+                    plot(plotHandles(k,j),meanSpikeWaveform,'color',[0.6 0.8 0.8],'Linewidth',plotLineWidth);
+                    text(0.1,0.8,num2str(snr),'color','r','unit','normalized','parent',plotHandles(k,j));
+                    text(0.8,0.8,num2str(spikeChannelNumber),'color','g','unit','normalized','parent',plotHandles(k,j));
+                    set(plotHandles(k,j),'Nextplot','replace');
+                    drawnow;
+                    clear segmentData meanSpikeWaveform
+                end
+                set(plotHandles,'color',[0 0 0]);
+            end
+
+
+            if analysisType == 5 || analysisType == 6
+
+                % Get the data
+                clear signal spikeData
+                load(fullfile(folderSpikes,['elec' num2str(spikeChannelNumber) '_SID' num2str(unitID) '.mat']));
+
+                disp(['Position: ' num2str(k) ', ' num2str(j) ', numStim: ' num2str(length(goodPos))]);
+                if analysisType == 5
+                    [psthVals,xs] = getPSTH(spikeData(goodPos),10,[timeVals(1) timeVals(end)]);
+                    plot(plotHandles(k,j),xs,psthVals,'color',plotColor,'Linewidth',plotLineWidth);
+                else
+                    X = spikeData(goodPos);
+                    axes(plotHandles(k,j)); %#ok<LAXES>
+                    rasterplot(X,1:length(X),plotColor);
+                end
+
+            end
+
+
+
+            if analysisType == 8 % get all plots
+
+                %--------------------------------------------------
+                % tf spectrum
+
+                colormap('default'); % revert the colormap to default, otherwise it stays grayscale after the stimulus is drawn
+                takeLogTrial = 0;
+                mtmParams.trialave=0;
+                specType = 1;
+                [~,~,dS,t2,f2] = getSpectrum(analogData(goodPos,:),timeVals,specType,mtmParams,movingWin,BLMin,BLMax,takeLogTrial);
+
+                % plot the difference spectrum
+%                             dS = dS + max(gabP(:));
+                pcolor(plotHandles(k,j),t2,f2,dS');
+                caxis([cmin cmax]); shading(plotHandles(k,j),'interp');
+
+                set(plotHandles(k,j),'xlim',[tmin tmax]);
+                set(plotHandles(k,j),'ylim',[fftmin fftmax]);
+                set(plotHandles(k,j),'clim',[cmin cmax]);
+
+
+                disp('Plotting TF spectrum...');
+                colormap(jet);
+
+            end
+
+        end
+
     end
+            
+            
+end
 end
 
 %==========================================================================
@@ -4016,7 +4022,8 @@ end
 % this was used for all elec91 plots -
 % gridLims = [-4 0 -5 -1];
 % gridLims = [-9 3 -9 2];
-gridLims = [-2 0 -2 0];
+% gridLims = [-2 0 -2 0]; % default was this on 08/11/16
+gridLims = [-3 0 -3 0];
 gridLimsNormalized(1) = -(gridLims(2)-gridLims(1))/2;
 gridLimsNormalized(2) = (gridLims(2)-gridLims(1))/2;
 gridLimsNormalized(3) = -(gridLims(4)-gridLims(3))/2;
@@ -4632,7 +4639,7 @@ else
 end
 end
 function [parameterCombinations,aValsUnique,eValsUnique,sValsUnique,...
-    fValsUnique,oValsUnique,cValsUnique,tValsUnique, rValsUnique, pValsUnique] = loadParameterCombinations(folderExtract)
+    fValsUnique,oValsUnique,cValsUnique,tValsUnique, pValsUnique, rValsUnique] = loadParameterCombinations(folderExtract)
 % [Vinay] - added rValsUnique and pValsUnique for radius and spatial phase
 load(fullfile(folderExtract,'parameterCombinations.mat'));
 
@@ -4666,12 +4673,7 @@ end
 
 function protocolNumber = getProtocolNumber(folderExtract)
 load (fullfile(folderExtract,'stimResults'));
-if isfield(stimResults,'protocolNumber')
-    protocolNumber = stimResults.protocolNumber;
-else
-    protocolNumber = inputdlg('enter protocol number: ');
-    protocolNumber = str2double(cell2mat(protocolNumber));
-end
+protocolNumber = stimResults.protocolNumber;
 end
 
 function gaborsDisplayed = getGaborsDisplayed(folderExtract)
@@ -4707,7 +4709,7 @@ function tfplotLFPDataVaryParameters1Channel(tfplotHandles,channelString,analogC
 %         freqForComputation = [40 60]; % Hz
 
         [parameterCombinations,aValsUnique,eValsUnique,sValsUnique,...
-            fValsUnique,oValsUnique,cValsUnique,tValsUnique,rValsUnique,pValsUnique] = loadParameterCombinations(folderExtract);
+            fValsUnique,oValsUnique,cValsUnique,tValsUnique,pValsUnique,rValsUnique] = loadParameterCombinations(folderExtract);
         
         numRows = size(tfplotHandles,1);
         numCols = size(tfplotHandles,2);
@@ -6197,7 +6199,7 @@ function reftfplotLFPDataVaryParameters1Channel(tfplotHandles,channelString,anal
 %         freqForComputation = [40 60]; % Hz
 
         [parameterCombinations,aValsUnique,eValsUnique,sValsUnique,...
-            fValsUnique,oValsUnique,cValsUnique,tValsUnique,rValsUnique,pValsUnique] = loadParameterCombinations(folderExtract);
+            fValsUnique,oValsUnique,cValsUnique,tValsUnique,pValsUnique,rValsUnique] = loadParameterCombinations(folderExtract);
         
         numRows = size(tfplotHandles,1);
         numCols = size(tfplotHandles,2);

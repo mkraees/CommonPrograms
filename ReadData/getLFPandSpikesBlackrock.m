@@ -108,8 +108,16 @@ ainpCount = 0;
 
 for i=1:cAnalog
     if strcmp(analogLabels(i,1:4),'elec') || strcmp(analogLabels(i,1:4),'chan')
+        % check for weird naming scheme in hygrid grids of the form
+        % elecX-YY and work around that to get to the electrode numbers
+        electrodeNumPos = strfind(analogLabels(i,:),'-');
+        if isempty(electrodeNumPos)
+            electrodeNumPos = 5;
+        else
+            electrodeNumPos = electrodeNumPos + 1;
+        end
         electrodeCount = electrodeCount+1;
-        electrodeNums(electrodeCount) = str2num(analogLabels(i,5:end)); %#ok<*AGROW,*ST2NM>
+        electrodeNums(electrodeCount) = str2num(analogLabels(i,electrodeNumPos:end)); %#ok<*AGROW,*ST2NM>
         electrodeListIDs(electrodeCount,:) = analogList(i);
         
     elseif strcmp(analogLabels(i,1:4),'ainp')
@@ -119,14 +127,49 @@ for i=1:cAnalog
     end
 end
 
-segmentLabelsElec = mat2cell(segmentLabels(:,1:4),ones(size(segmentLabels(:,1:4),1),1),4);
-segmentChannelNums = str2num(segmentLabels(strcmp(segmentLabelsElec,'elec'),5:end)); % get segments only for spiking channels
-neuralChannelNums  = str2num(neuralLabels(:,5:end));
+segmentChannelNums = [];
+for i=1:cSegment
+    % store segments only from electrodes
+    if strcmp(segmentLabels(i,1:4),'elec')
+        % check for weird naming scheme in hygrid grids of the form
+        % elecX-YY and work around that to get to the electrode numbers
+        electrodeNumPos = strfind(segmentLabels(i,:),'-');
+        if isempty(electrodeNumPos)
+            electrodeNumPos = 5;
+        else
+            electrodeNumPos = electrodeNumPos + 1;
+        end
+        segmentChannelNums(end+1) = str2num(segmentLabels(i,electrodeNumPos:end));
+    end
+end
+
+neuralChannelNums = [];
+for i=1:cNeural
+    % store spikes only from electrodes
+    if strcmp(neuralLabels(i,1:4),'elec')
+        % check for weird naming scheme in hygrid grids of the form
+        % elecX-YY and work around that to get to the electrode numbers
+        electrodeNumPos = strfind(neuralLabels(i,:),'-');
+        if isempty(electrodeNumPos)
+            electrodeNumPos = 5;
+        else
+            electrodeNumPos = electrodeNumPos + 1;
+        end
+        neuralChannelNums(end+1) = str2num(neuralLabels(i,electrodeNumPos:end));
+    end
+end
+
+% segmentLabelsElec = mat2cell(segmentLabels(:,1:4),ones(size(segmentLabels(:,1:4),1),1),4);
+% segmentChannelNums = str2num(segmentLabels(strcmp(segmentLabelsElec,'elec'),5:end)); % get segments only for spiking channels
+% neuralChannelNums  = str2num(neuralLabels(:,5:end));
 
 % Display these numbers
 disp(['Total number of Analog channels recorded: ' num2str(cAnalog) ', electrodes: ' num2str(electrodeCount) ', Inp: ' num2str(ainpCount)]);
-disp(['Total number of Segments recorded: ' num2str(cSegment)]);
-disp(['Total number of Neurons recorded: ' num2str(cNeural)]);
+% disp(['Total number of Segments recorded: ' num2str(cSegment)]);
+% disp(['Total number of Neurons recorded: ' num2str(cNeural)]);
+disp(['Total number of Segments recorded: ' num2str(length(segmentChannelNums))]);
+disp(['Total number of Neurons recorded: ' num2str(length(neuralChannelNums))]);
+
 
 % Get the desired number of samples
 numberOfItems = [entityInfo.ItemCount];

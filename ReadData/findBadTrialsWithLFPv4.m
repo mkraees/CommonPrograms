@@ -2,8 +2,13 @@
 % 1. threshold times the std dev. 
 % 2. maxLimit
 % If yes, that trial is marked as a bad trial
+% 
+% 07 July 2017, incorporating code for rejections based on statistics at
+% every time point, as done for EEG
+% modified from findBadTrialsWithLFPv3 and findBadTrialsEEGv2
+%&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
-function [allBadTrials,badTrials] = findBadTrialsWithLFPv3(monkeyName,expDate,protocolName,folderSourceString,gridType,checkTheseElectrodes,processAllElectrodes,threshold,maxLimit,minLimit,showElectrodes,saveDataFlag,checkPeriod,rejectTolerance)
+function [allBadTrials,badTrials] = findBadTrialsWithLFPv4(monkeyName,expDate,protocolName,folderSourceString,gridType,checkTheseElectrodes,processAllElectrodes,threshold,maxLimit,minLimit,showElectrodes,saveDataFlag,checkPeriod,rejectTolerance)
 
 if ~exist('processAllElectrodes','var');     processAllElectrodes = 0;                  end
 if ~exist('folderSourceString','var');       folderSourceString = 'G:';                 end
@@ -46,7 +51,7 @@ for i=1:numElectrodes
     disp(['Processing electrode: ' num2str(electrodeNum)]);
     nameElec{i} = ['elec' num2str(electrodeNum)];
     disp(nameElec{i});
-    
+    maxLimitElec = maxLimit; minLimitElec = minLimit; % same limits for all electrodes unlike EEG where the threshold is higher for frontal electrodes
     analogDataSegment = analogData;
     % determine indices corresponding to the check period
     checkPeriodIndices = timeVals>=checkPeriod(1) & timeVals<=checkPeriod(2);
@@ -61,11 +66,49 @@ for i=1:numElectrodes
     maxData  = max(analogData,[],2)';
     minData  = min(analogData,[],2)';
     
-    clear tmpBadTrials tmpBadTrials2
-    tmpBadTrials = unique([find(maxData > meanData + threshold * stdData) find(minData < meanData - threshold * stdData)]);
-    tmpBadTrials2 = unique(find(maxData > maxLimit));
-    tmpBadTrials3 = unique(find(minData < minLimit));
-    allBadTrials{electrodeNum} = unique([tmpBadTrials tmpBadTrials2 tmpBadTrials3]);
+    clear tmpBadTrials1 tmpBadTrials2 tmpBadTrials3 tmpBadTrials4 
+    tmpBadTrials1 = unique([find(maxData > meanData + threshold * stdData) find(minData < meanData - threshold * stdData)]);
+    % Vinay - Ideally set maxLimit and minLimit for the below criteria to
+    % be quite high/low so that only the extremely noisy trials are
+    % rejected by these
+    tmpBadTrials2 = unique(find(maxData > maxLimitElec));
+    tmpBadTrials3 = unique(find(minData < minLimitElec));
+    
+    % Vinay - Set another criterion based on the deviation of each trial
+    % from the mean trial signal. This way even if the actual signal shows
+    % high deflections, if those deflections are consistent then the trials
+    % are not rejected purely on the max/min criteria above
+    meanTrialData = mean(analogData,1); % mean trial trace
+    stdTrialData = std(analogData,[],1); % std across trials
+%     maxTrialData = max(analogData,[],1);
+%     minTrialData = min(analogData,[],1);
+    tDplus = (meanTrialData + (threshold)*stdTrialData); % upper boundary/criterion
+    tDminus = (meanTrialData - (threshold)*stdTrialData); % lower boundary/criterion
+    
+    % Check for trials that cross these boundaries and mark them as bad
+    tBoolTrials = zeros(1,numTrials);
+    for tr = 1:numTrials
+        
+        trialDeviationHigh = tDplus - analogData(tr,:); % deviation from the upper boundary
+        trialDeviationLow = analogData(tr,:) - tDminus; % deviation from the lower boundary
+        
+        tBool = zeros(size(meanTrialData,1),size(meanTrialData,2));
+        tBool(trialDeviationHigh<0) = 1; % set if the upper boundary is crossed anywhere
+        tBool1 = sum(tBool); % number of times the upper boundary was crossed
+        
+        tBool = zeros(size(meanTrialData,1),size(meanTrialData,2));
+        tBool(trialDeviationLow<0) = 1; % set if the lower boundary is crossed anywhere
+        tBool2 = sum(tBool); % number of times the lower boundary was crossed
+
+        tBoolTrials(tr) = tBool1 + tBool2; % number of times the boundaries were crossed
+    end
+    
+    tmpBadTrials4 = find(tBoolTrials>0);
+    
+    allBadTrials{electrodeNum} = unique([tmpBadTrials1 tmpBadTrials2 tmpBadTrials3 tmpBadTrials4]);
+    
+    clear meanData maxData minData stdData meanTrialData stdTrialData maxLimitElec minLimitElec
+    clear trialDeviationHigh trialDeviationLow tBool tBool1 tBool2 tBoolTrials tDminus tDplus
 end
 
 numElectrodes = length(checkTheseElectrodes); % check the list for these electrodes only to generate the overall badTrials list
@@ -75,6 +118,7 @@ for i=1:numElectrodes
     j = checkTheseElectrodes(i);
     badTrials=intersect(badTrials,allBadTrials{j}); % in the previous case we took the union
 end
+disp(['total Trials: ' num2str(numTrials) ', bad trials: ' num2str(badTrials)]);
 
 %**************************************************************************
 % [vinay] SOME ADDITIONAL CRITERIA for detecting bad repeats and electrodes
@@ -117,7 +161,7 @@ marginalStim = sum(allBadTrialsMatrix(checkTheseElectrodes,:),1); % for each sti
 marginalElectrodes = sum(allBadTrialsMatrix,2); % for each electrode - no. of stimuli flagged as bad
 
 if processAllElectrodes && strcmpi(gridType,'Microelectrode')
-    if strcmpi(monkeyName,'tutu')
+    if strcmpi(monkeyName,'tutu') || strcmpi(monkeyName,'alpaH')
         electrodesForMarginals = 1:81;
     else
         electrodesForMarginals = 1:96;
@@ -127,13 +171,18 @@ else
 end
 
 thresholdMarginal = threshold/2; % thresholdMarginal i.e. values> u+thresholdMarginal*sigma will be tagged as bad 
-badTrialsMarginalStats = [];
 badElecsMarginalStats = [];
-if mean(marginalStim)>0
-    badTrialsMarginalStats = find(marginalStim>=(mean(marginalStim)+std(marginalStim)*thresholdMarginal));
-end
 if mean(marginalElectrodes(electrodesForMarginals))>0
     badElecsMarginalStats = find(marginalElectrodes(electrodesForMarginals)>=(mean(marginalElectrodes(electrodesForMarginals))+std(marginalElectrodes(electrodesForMarginals))*thresholdMarginal));
+end
+
+% [vinay] 11 July 2017
+% determine marginalstim after removing the badElecs and then determine
+% badTrialsMarginalStats
+marginalStim = sum(allBadTrialsMatrix(setdiff(checkTheseElectrodes,badElecsMarginalStats),:),1);
+badTrialsMarginalStats = [];
+if mean(marginalStim)>0
+    badTrialsMarginalStats = find(marginalStim>=(mean(marginalStim)+std(marginalStim)*thresholdMarginal));
 end
 
 badTrials = unique(cat(2,badTrials,badTrialsMarginalStats));
@@ -232,10 +281,9 @@ if ~isempty(badElecs)
 end
 view([90 -90]);
 
-if saveDataFlag
-    saveas(summaryFig,fullfile(folderSegment,[monkeyName expDate protocolName 'summmaryBadTrials.fig']),'fig');
-    saveas(summaryFig,[monkeyName expDate protocolName 'summmaryBadTrials.fig'],'fig');
-end
+saveas(summaryFig,fullfile(folderSegment,[monkeyName expDate protocolName 'summmaryBadTrials.fig']),'fig');
+saveas(summaryFig,[monkeyName expDate protocolName 'summmaryBadTrials.fig'],'fig');
+
 %**************************************************************************
 % fill the badTrials summary sheet #TODO
 %**************************************************************************

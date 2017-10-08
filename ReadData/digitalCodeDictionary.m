@@ -40,6 +40,7 @@ codeList = [...
     'T0'; 
     'T1'; 
     'PN'; % [Vinay] - for CRS, protocol Number
+    'LG'; % [Vinay] 260917 - for CRS, lag between drawn gabors (between S and (R&C)) (value in milliseconds)
 ];
 
 if isempty(str)
