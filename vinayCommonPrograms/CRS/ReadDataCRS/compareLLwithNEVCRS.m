@@ -58,6 +58,89 @@ load(fullfile(folderExtract,'digitalEvents.mat'));
     spLL3 = LL.SpatialPhaseDeg3(validMap);
     timeLL3 = LL.time3(validMap);
     
+    % [Vinay] 270218 Adjustments related to lagGabor protocols
+    % Check if the nearest mapping1Times occur within a threshold time from
+    % mapping0Times. If yes then it is a valid trial, else it is a failed 
+    % trial where only gabor0 mapping was recorded.
+    if length(timeLL1)~=length(timeLL2)
+        if ~exist('mappingDiffThresholdMS','var')
+            mappingDiffThresholdMS = 1500; % threshold value in milliseconds (slightly more than stimResults.lagGaborsMS)
+        end
+        dummyValC = -1; dummyValR = -1;
+        invalidCount = 0;
+        for i=1:length(timeLL1) % check for all the times gabor0 was mapped
+            mDiff21 = abs(timeLL2-timeLL1(i)); % absolute of difference between mapping times
+            j = i-invalidCount;
+            if min(mDiff21)<mappingDiffThresholdMS % for valid mapping the nearest mapping is within the threshold
+                aziLL2b(i) = aziLL2(j);
+                eleLL2b(i) = eleLL2(j);
+                sigmaLL2b(i) = sigmaLL2(j);
+                radiusLL2b(i) = radiusLL2(j);
+                sfLL2b(i) = sfLL2(j);
+                oriLL2b(i) = oriLL2(j);
+                conLL2b(i) = conLL2(j); 
+                tfLL2b(i) = tfLL2(j);
+                spLL2b(i) = spLL2(j);
+                
+                aziLL3b(i) = aziLL3(j);
+                eleLL3b(i) = eleLL3(j);
+                sigmaLL3b(i) = sigmaLL3(j);
+                radiusLL3b(i) = radiusLL3(j);
+                sfLL3b(i) = sfLL3(j);
+                oriLL3b(i) = oriLL3(j);
+                conLL3b(i) = conLL3(j); 
+                tfLL3b(i) = tfLL3(j);
+                spLL3b(i) = spLL3(j);
+            else % for failed trial fill dummy values
+                conLL2b(i) = dummyValC;
+                radiusLL2b(i) = dummyValR;
+                
+                conLL3b(i) = dummyValC;
+                radiusLL3b(i) = dummyValR;
+                
+                aziLL2b(i) = aziLL2(1);
+                eleLL2b(i) = eleLL2(1);
+                sigmaLL2b(i) = sigmaLL2(1);
+                sfLL2b(i) = sfLL2(1);
+                oriLL2b(i) = oriLL2(1);
+                tfLL2b(i) = tfLL2(1);
+                spLL2b(i) = spLL2(1);
+                
+                aziLL3b(i) = aziLL3(1);
+                eleLL3b(i) = eleLL3(1);
+                sigmaLL3b(i) = sigmaLL3(1);
+                sfLL3b(i) = sfLL3(1);
+                oriLL3b(i) = oriLL3(1);
+                tfLL3b(i) = tfLL3(1);
+                spLL3b(i) = spLL3(1);
+                
+                invalidCount = invalidCount+1;
+            end
+        end
+        % assign the new values
+        aziLL2 = aziLL2b;
+        eleLL2 = eleLL2b;
+        sigmaLL2 = sigmaLL2b;
+        radiusLL2 = radiusLL2b;
+        sfLL2 = sfLL2b;
+        oriLL2 = oriLL2b;
+        conLL2 = conLL2b; 
+        tfLL2 = tfLL2b;
+        spLL2 = spLL2b;
+        
+        aziLL3 = aziLL3b;
+        eleLL3 = eleLL3b;
+        sigmaLL3 = sigmaLL3b;
+        radiusLL3 = radiusLL3b;
+        sfLL3 = sfLL3b;
+        oriLL3 = oriLL3b;
+        conLL3 = conLL3b; 
+        tfLL3 = tfLL3b;
+        spLL3 = spLL3b;
+        
+    end
+    %----------------
+    
     %----------
     % Combine all values
     % Combinations depend on the gabors which are not NULL, which in turn

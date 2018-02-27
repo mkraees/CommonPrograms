@@ -161,7 +161,7 @@ marginalStim = sum(allBadTrialsMatrix(checkTheseElectrodes,:),1); % for each sti
 marginalElectrodes = sum(allBadTrialsMatrix,2); % for each electrode - no. of stimuli flagged as bad
 
 if processAllElectrodes && strcmpi(gridType,'Microelectrode')
-    if strcmpi(monkeyName,'tutu') || strcmpi(monkeyName,'alpaH')
+    if strcmpi(monkeyName,'tutu') || strcmpi(monkeyName,'alpaH') || strcmpi(monkeyName,'kesariH')
         electrodesForMarginals = 1:81;
     else
         electrodesForMarginals = 1:96;

@@ -1,4 +1,4 @@
-% convert a cell to a row cell
+% convert a cell to a column cell
 
 function [out] = columncell(in)
 

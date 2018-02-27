@@ -108,54 +108,90 @@ catch
     stimResults.lagGaborsMS = 0;
 end
 
-% [Vinay] 270917 Temporary fix to extract parameter values for Annulus
-% fixed protocols with lagging gabors
-% Adjust the read values of the parameters if lag is used in the protocol
-% If lag is used then there might be cases where the fixation was broken
-% before the gabors with the lag were drawn. In such a case the contrast
-% and radii for the undrawn gabors are not sent and recorded. We need to
-% fill those values with some dummy values (-1 used here)
+% % [Vinay] 270917 Temporary fix to extract parameter values for Annulus
+% % fixed protocols with lagging gabors
+% % Adjust the read values of the parameters if lag is used in the protocol
+% % If lag is used then there might be cases where the fixation was broken
+% % before the gabors with the lag were drawn. In such a case the contrast
+% % and radii for the undrawn gabors are not sent and recorded. We need to
+% % fill those values with some dummy values (-1 used here)
+% if stimResults.protocolNumber==10 && stimResults.lagGaborsMS~=0 && lagGaborsProtocol
+%     
+%     dummyVal = -1;
+%     
+%     conS = setdiff(unique(contrast),0);
+%     j=1; k=1;
+%     for i=1:length(contrast)-1
+%         if ismember(contrast(i),conS) && ismember(contrast(i+1),conS)
+%             conAlt(j) = contrast(i); conAlt(j+1) = dummyVal;
+%             j=j+2;
+%         else
+%             conAlt(j) = contrast(i);
+%             j=j+1;
+%         end
+%     end
+%     if ismember(contrast(end),conS)
+%         conAlt(j) = contrast(end);
+%         conAlt(j+1) = dummyVal;
+%     else
+%         conAlt(j) = contrast(end);
+%     end
+%     
+%     radS = radius(1);
+%     j=1;
+%     for i=1:length(radius)-1
+%         if radius(i)==radS && radius(i+1)==radS
+%             radAlt(j) = radius(i); radAlt(j+1) = dummyVal; radAlt(j+2) = dummyVal;
+%             j=j+3;
+%         else
+%             radAlt(j) = radius(i);
+%             j=j+1;
+%         end
+%     end
+%     if radius(end)==radS
+%         radAlt(j) = radius(end); radAlt(j+1) = dummyVal; radAlt(j+2) = dummyVal;
+%     else
+%         radAlt(j) = radius(end);
+%     end
+%     % assign the new values
+%     contrast = conAlt'; radius = radAlt;
+% end
+
+% [Vinay] 270218 A more solid fix to extract parameter values for Annulus
+% fixed protocols with lagging gabors. This fix tags the trials where only
+% the parameters for gabor0 (surround) were sent but not for others. This
+% is used to fill in dummy values for the parameters.
+% If gabor0 is mapped then gabor1 and gabor 2 are mapped after some delay
+% approximately equal to stimResults.lagGaborsMS. Check if the nearest
+% mapping1Times occur within a threshold time from mapping0Times. If yes
+% then it is a valid trial, else it is a failed trial where only gabor0 
+% mapping was recorded.
+mappingDiffThresholdSec = stimResults.lagGaborsMS/1000+0.5; % threshold value in seconds (slightly more than stimResults.lagGaborsMS)
+conAlt = []; radAlt = [];
 if stimResults.protocolNumber==10 && stimResults.lagGaborsMS~=0 && lagGaborsProtocol
-    
-    dummyVal = -1;
-    
-    conS = setdiff(unique(contrast),0);
-    j=1;
-    for i=1:length(contrast)-1
-        if ismember(contrast(i),conS) && ismember(contrast(i+1),conS)
-            conAlt(j) = contrast(i); conAlt(j+1) = dummyVal;
-            j=j+2;
-        else
-            conAlt(j) = contrast(i);
-            j=j+1;
+    dummyValC = -1; dummyValR = -1;
+    invalidCount = 0;
+    for i=1:length(mapping0Times) % check for all the times gabor0 was mapped
+        mDiff10 = abs(mapping1Times-mapping0Times(i)); % absolute of difference between mapping times
+%         if min(mDiff10)<mappingDiffThresholdMS
+%             validMappings(i) = find(mDiff10==min(mDiff10)); % (tag with the trial number)
+%         else
+%             validMappings(i) = 0; % (tag as zero)
+%         end
+        j = 2*i-1-invalidCount; k = 3*i-2-2*invalidCount;
+        if min(mDiff10)<mappingDiffThresholdSec % for valid mapping the nearest mapping is within the threshold
+            conAlt(2*i-1) = contrast(j); conAlt(2*i) = contrast(j+1);
+            radAlt(3*i-2) = radius(k); radAlt(3*i-1) = radius(k+1); radAlt(3*i) = radius(k+2);
+        else % for failed trial fill dummy values
+            conAlt(2*i-1) = contrast(j); conAlt(2*i) = dummyValC;
+            radAlt(3*i-2) = radius(k); radAlt(3*i-1) = dummyValR; radAlt(3*i) = dummyValR;
+            invalidCount = invalidCount+1;
         end
-    end
-    if ismember(contrast(end),conS)
-        conAlt(j) = contrast(end);
-        conAlt(j+1) = dummyVal;
-    else
-        conAlt(j) = contrast(end);
-    end
-    
-    radS = radius(1);
-    j=1;
-    for i=1:length(radius)-1
-        if radius(i)==radS && radius(i+1)==radS
-            radAlt(j) = radius(i); radAlt(j+1) = dummyVal; radAlt(j+2) = dummyVal;
-            j=j+3;
-        else
-            radAlt(j) = radius(i);
-            j=j+1;
-        end
-    end
-    if radius(end)==radS
-        radAlt(j) = radius(end); radAlt(j+1) = dummyVal; radAlt(j+2) = dummyVal;
-    else
-        radAlt(j) = radius(end);
     end
     % assign the new values
-    contrast = conAlt'; radius = radAlt;
+    contrast = conAlt'; radius = radAlt';
 end
+
 
 %----
 % Adjust the stimResults.parameter based on the protocolNumber if partial
